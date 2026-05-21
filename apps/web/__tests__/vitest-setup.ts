@@ -21,3 +21,10 @@ Object.defineProperty(globalThis, "localStorage", {
   value: localStorageMock,
   writable: true,
 });
+
+// Polyfill URL.createObjectURL / revokeObjectURL for jsdom
+if (typeof URL.createObjectURL === "undefined") {
+  let counter = 0;
+  URL.createObjectURL = () => `blob:test/${++counter}`;
+  URL.revokeObjectURL = () => {};
+}
