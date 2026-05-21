@@ -11,14 +11,15 @@
   },
   "devDependencies": {
     "@super-image/typescript-config": "workspace:*",
+    "@types/react": "^19.0.0",
     "typescript": "^5.6.0"
   },
   "dependencies": {
-    "@super-image/utils": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.0",
     "@radix-ui/react-dropdown-menu": "^2.1.0",
     "@radix-ui/react-select": "^2.1.0",
     "@radix-ui/react-tooltip": "^1.1.0",
+    "@super-image/utils": "workspace:*",
     "react": "^19.0.0"
   },
   "peerDependencies": {
