@@ -80,12 +80,14 @@ export interface ImageProvider {
     prompt: string,
     options: GenerateOptions,
     config: ProviderConfig,
+    signal?: AbortSignal,
   ): Promise<GenerateResult>;
   edit?(
     prompt: string,
     image: Blob,
     options: GenerateOptions,
     config: ProviderConfig,
+    signal?: AbortSignal,
   ): Promise<GenerateResult>;
   testConnection(config: ProviderConfig): Promise<boolean>;
 }
