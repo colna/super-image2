@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { SettingsPanel } from "@/components/settings-panel";
+import { Sidebar } from "@/components/sidebar";
 import { useUIStore } from "@/stores/ui-store";
 
 export function ChatLayout({ children }: { children: ReactNode }) {
@@ -16,14 +17,8 @@ export function ChatLayout({ children }: { children: ReactNode }) {
           sidebarOpen ? "w-[280px]" : "w-0"
         }`}
       >
-        <div className="flex h-full w-[280px] flex-col p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <span className="text-sm font-semibold text-foreground">Sessions</span>
-          </div>
-          {/* Session list placeholder — Phase 5 */}
-          <div className="flex flex-1 items-center justify-center">
-            <p className="text-xs text-foreground-secondary">No sessions yet</p>
-          </div>
+        <div className="h-full w-[280px]">
+          <Sidebar />
         </div>
       </aside>
 

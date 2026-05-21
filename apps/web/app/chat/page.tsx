@@ -5,6 +5,7 @@ import { useCallback } from "react";
 
 import { ChatInput } from "@/components/chat-input";
 import { ChatLayout } from "@/components/chat-layout";
+import { EmptyState } from "@/components/empty-state";
 import { useSessionStore } from "@/stores/session-store";
 import { useSettingsStore } from "@/stores/settings-store";
 
@@ -13,7 +14,7 @@ export default function ChatPage() {
   const { createSession } = useSessionStore();
   const { activeProviderId, providers } = useSettingsStore();
 
-  const handleSend = useCallback(
+  const createAndNavigate = useCallback(
     async (prompt: string, params: { size: string; quality: string; n: number }) => {
       const config = providers[activeProviderId];
       const sessionId = crypto.randomUUID();
@@ -26,8 +27,6 @@ export default function ChatPage() {
         modelId: config?.defaultModel ?? "gpt-image-1",
       });
 
-      // Navigate to the session page — ChatArea will handle the generate call
-      // Store the pending prompt in sessionStorage for pickup
       sessionStorage.setItem(
         `pending-prompt-${sessionId}`,
         JSON.stringify({ prompt, params }),
@@ -37,19 +36,22 @@ export default function ChatPage() {
     [createSession, activeProviderId, providers, router],
   );
 
+  const handlePromptClick = useCallback(
+    (prompt: string) => {
+      const config = providers[activeProviderId];
+      createAndNavigate(prompt, {
+        size: config?.defaultParams.size ?? "1024x1024",
+        quality: config?.defaultParams.quality ?? "auto",
+        n: config?.defaultParams.n ?? 1,
+      });
+    },
+    [createAndNavigate, providers, activeProviderId],
+  );
+
   return (
     <ChatLayout>
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center">
-          <h2 className="mb-2 text-lg font-medium text-foreground">
-            SuperImage
-          </h2>
-          <p className="text-sm text-foreground-secondary">
-            Describe the image you want to generate
-          </p>
-        </div>
-      </div>
-      <ChatInput onSend={handleSend} />
+      <EmptyState onPromptClick={handlePromptClick} />
+      <ChatInput onSend={createAndNavigate} />
     </ChatLayout>
   );
 }
