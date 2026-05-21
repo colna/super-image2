@@ -11,24 +11,68 @@
 
 仓库根目录统一通过 Turborepo 编排任务。引入或调整工具链时，优先提供稳定的根目录命令，并在 README 或本文件更新说明：
 
-- `pnpm dev`：启动全部应用的本地开发服务或 watcher。
-- `pnpm dev:app`：启动主项目 App（Tauri）。
-- `pnpm dev:web`：启动官网 App（Next.js）。
+- `pnpm dev`：启动全部应用的本地开发服务。
+- `pnpm dev:web`：仅启动核心产品（`apps/web`，文字生图对话平台）。
+- `pnpm dev:home`：仅启动官网（`apps/home`，Landing Page）。
 - `pnpm build`：通过 `turbo build` 生成生产构建产物。
-- `pnpm test`：通过 `turbo test` 运行完整自动化测试。
-- `pnpm lint`：通过 `turbo lint` 运行格式、lint、类型检查。
+- `pnpm test`：通过 `turbo test` 运行完整自动化测试（Vitest）。
+- `pnpm lint`：通过 `turbo lint` 运行 ESLint 检查。
+- `pnpm type-check`：通过 `turbo type-check` 运行 TypeScript 类型检查。
+- `pnpm format`：通过 Prettier 格式化代码。
 
 除非工具文档另有说明，所有命令默认从仓库根目录执行。
 
 ## 任务执行流程
 
-每完成一个明确任务，按顺序处理：
+开发严格按照 `docs/任务拆解文档.md` 中定义的 Phase → Task 顺序推进。
 
-1. 补齐或更新测试。
-2. 运行相关测试和检查命令。
-3. 如存在 `docs/任务报告.md`，追加记录；没有该文件时，在 PR/提交说明中记录验证结果。
-4. 检查工作区变更，避免混入无关修改。
-5. 提交代码；未经用户明确要求，不执行破坏性 Git 操作。
+### Task 级别（每个 Task 完成时）
+
+1. **编写测试**：每个 Task 必须包含对应的测试（单元测试 / 集成测试），覆盖该 Task 的核心逻辑和边界情况。测试框架使用 Vitest。
+2. **运行测试**：`pnpm test` 确保全部通过，`pnpm lint` 和 `pnpm type-check` 无报错。
+3. **更新进度文档**：在 `docs/任务进度.md` 中记录该 Task 的完成状态、验证结果和备注。格式：
+
+   ```markdown
+   ### Task X.Y — 任务名称
+   - **状态**：✅ 完成 / ⚠️ 部分完成 / ❌ 阻塞
+   - **完成时间**：YYYY-MM-DD HH:mm
+   - **测试**：X passed, 0 failed
+   - **commit**：`<commit hash>`
+   - **备注**：（可选，记录遇到的问题或偏离任务文档的决策）
+   ```
+
+4. **检查工作区**：`git status` 确认无无关修改混入。
+5. **提交并推送**：每个 Task 单独一个 commit，Conventional Commits 格式（如 `feat(web): add settings panel UI`），提交后立即 `git push`。
+
+### Phase 级别（每个 Phase 全部 Task 完成时）
+
+1. **Review 全部 Task**：回顾本 Phase 的每个 Task，确认代码质量、测试覆盖、实现是否符合 PRD 和交互设计文档。
+2. **运行完整测试套件**：`pnpm test && pnpm lint && pnpm type-check && pnpm build`，全部通过。
+3. **记录 Phase 完成**：在 `docs/任务进度.md` 中追加 Phase 总结：
+
+   ```markdown
+   ## Phase X 总结
+   - **完成时间**：YYYY-MM-DD
+   - **测试总计**：X passed, 0 failed
+   - **构建状态**：✅ 成功
+   - **Review 备注**：（代码质量、技术债务、后续注意事项）
+   ```
+
+4. **整体验证**：如涉及 UI，在浏览器中完整走一遍该 Phase 的功能流程。
+
+### 任务进度文档
+
+首次开始开发时，创建 `docs/任务进度.md`，结构如下：
+
+```markdown
+# SuperImage2 — 任务进度
+
+> 自动更新，每完成一个 Task 追加记录。
+
+## Phase 1: 项目脚手架
+### Task 1.1 — ...
+...
+```
 
 涉及 UI/UX 或特定语言/框架时，先按下方 skill 规则读取对应规范，再动手实现。
 
@@ -101,3 +145,19 @@ PR 需包含：变更摘要、验证命令与结果、关联 issue（如有）�
 ## 安全与配置
 
 不要提交密钥、本地 `.env`、机器专用路径或个人凭据。需要配置时提供 `.env.example`，并在 `docs/` 或 README 中说明变量用途、默认值和是否必填。
+
+## 测试环境
+
+本地 `.env.local` 中配置了测试用 API Key 和 Base URL，用于开发阶段手动验证图片生成功能。
+
+- **API 端点**：`/v1/images/generations`（生成）、`/v1/images/edits`（编辑）
+- **可用模型**：`gpt-image-1`（首要支持目标）
+- **⚠️ 额度限制**：该测试 Key 仅有约 20 元人民币余额，**必须谨慎使用**：
+  - 优先使用 mock / fixture 进行自动化测试，**禁止在 CI 或自动化测试中调用真实 API**
+  - 手动验证端到端链路时使用最小参数（`size: 1024x1024`, `quality: standard`, `n: 1`）
+  - 每次手动测试前确认必要性，避免重复调用
+  - 测试 prompt 使用简短文本（如 "a red circle"），减少 token 消耗
+- **环境变量**：
+  - `TEST_OPENAI_API_KEY`：测试用 API Key
+  - `TEST_OPENAI_BASE_URL`：测试用 Base URL
+- **绝对不要**将 `.env.local` 中的 Key 提交到 Git

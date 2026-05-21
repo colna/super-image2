@@ -1,0 +1,19 @@
+{
+  "name": "@super-image/utils",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@super-image/typescript-config": "workspace:*",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.5.0"
+  }
+}
