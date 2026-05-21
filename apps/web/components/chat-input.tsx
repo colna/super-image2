@@ -66,7 +66,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   return (
     <div className="shrink-0 border-t border-border bg-background p-4">
       {/* Quick params bar */}
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-foreground-secondary">Size</span>
           <Select
@@ -137,7 +137,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       {/* Input area */}
       <div
         className={`flex items-end gap-2 rounded-bubble border border-border bg-background-card p-2 transition-all ${
-          shake ? "animate-[shake_0.5s_ease-in-out]" : ""
+          shake ? "animate-shake" : ""
         }`}
       >
         <textarea

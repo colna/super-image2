@@ -1,21 +1,75 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { Session } from "@super-image/utils";
+import { useRouter } from "next/navigation";
+import { type ReactNode, useCallback, useMemo } from "react";
 
 import { SettingsPanel } from "@/components/settings-panel";
 import { Sidebar } from "@/components/sidebar";
+import { useHotkeys } from "@/hooks/use-hotkeys";
+import { useSessionStore } from "@/stores/session-store";
 import { useUIStore } from "@/stores/ui-store";
 
 export function ChatLayout({ children }: { children: ReactNode }) {
-  const { sidebarOpen, toggleSidebar, toggleSettingsPanel } = useUIStore();
+  const { sidebarOpen, toggleSidebar, toggleSettingsPanel, setSettingsPanelOpen } = useUIStore();
+  const { createSession } = useSessionStore();
+  const router = useRouter();
+
+  const handleNewSession = useCallback(async () => {
+    const id = crypto.randomUUID();
+    const session: Session = {
+      id,
+      title: "New Chat",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      providerId: "openai",
+      modelId: "gpt-image-1",
+    };
+    await createSession(session);
+    router.push(`/chat/${id}`);
+  }, [createSession, router]);
+
+  const handleFocusSearch = useCallback(() => {
+    const { sidebarOpen: open, setSidebarOpen } = useUIStore.getState();
+    if (!open) setSidebarOpen(true);
+    setTimeout(() => {
+      const el = document.querySelector<HTMLInputElement>("[data-sidebar-search]");
+      el?.focus();
+    }, open ? 0 : 350);
+  }, []);
+
+  const hotkeys = useMemo(
+    () => ({
+      "meta+n": handleNewSession,
+      "meta+,": toggleSettingsPanel,
+      "meta+k": handleFocusSearch,
+      "meta+\\": toggleSidebar,
+      Escape: () => setSettingsPanelOpen(false),
+    }),
+    [handleNewSession, toggleSettingsPanel, handleFocusSearch, toggleSidebar, setSettingsPanelOpen],
+  );
+
+  useHotkeys(hotkeys);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/20 md:hidden"
+          onClick={() => useUIStore.getState().setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — inline on md+, overlay on mobile */}
       <aside
-        className={`shrink-0 border-r border-border bg-background transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${
-          sidebarOpen ? "w-[280px]" : "w-0"
-        }`}
+        className={`
+          shrink-0 border-r border-border bg-background overflow-hidden
+          transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
+          max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:w-[280px]
+          md:relative
+          ${sidebarOpen ? "md:w-[280px] max-md:translate-x-0" : "md:w-0 max-md:-translate-x-full"}
+        `}
       >
         <div className="h-full w-[280px]">
           <Sidebar />
@@ -30,7 +84,7 @@ export function ChatLayout({ children }: { children: ReactNode }) {
             <button
               onClick={toggleSidebar}
               className="rounded-card p-1.5 text-foreground-secondary hover:bg-background-hover hover:text-foreground transition-colors"
-              title="Toggle sidebar"
+              title="Toggle sidebar (⌘\)"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M3 4.5h12M3 9h12M3 13.5h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

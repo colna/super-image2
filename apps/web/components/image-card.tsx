@@ -1,17 +1,18 @@
 "use client";
 
 import type { ImageResult } from "@super-image/utils";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getImage } from "@/lib/db";
 
 interface ImageCardProps {
   image: ImageResult;
-  messageId: string;
+  onClick?: () => void;
 }
 
-export function ImageCard({ image, messageId }: ImageCardProps) {
+export function ImageCard({ image, onClick }: ImageCardProps) {
   const [blobUrl, setBlobUrl] = useState<string | null>(image.localBlobUrl ?? null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   // Load blob from IndexedDB and create Object URL
   useEffect(() => {
@@ -60,10 +61,13 @@ export function ImageCard({ image, messageId }: ImageCardProps) {
       {blobUrl ? (
         /* eslint-disable-next-line @next/next/no-img-element -- blob URL, not optimizable */
         <img
+          ref={imgRef}
           src={blobUrl}
           alt="Generated image"
-          className="w-full rounded-card object-cover transition-opacity duration-300"
+          className="w-full cursor-pointer rounded-card object-cover opacity-0 transition-opacity duration-300"
           loading="lazy"
+          onClick={onClick}
+          onLoad={() => imgRef.current?.classList.replace("opacity-0", "opacity-100")}
         />
       ) : (
         <div className="aspect-square w-full animate-pulse rounded-card bg-border/50" />
@@ -92,8 +96,6 @@ export function ImageCard({ image, messageId }: ImageCardProps) {
         </button>
       </div>
 
-      {/* Loading overlay placeholder for unused messageId */}
-      <span className="hidden">{messageId}</span>
     </div>
   );
 }

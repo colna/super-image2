@@ -54,7 +54,7 @@ export function EmptyState({ onPromptClick }: EmptyStateProps) {
         <p className="mb-6 text-center text-sm text-foreground-secondary">
           Describe the image you want to create
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {EXAMPLE_PROMPTS.map((prompt) => (
             <button
               key={prompt}

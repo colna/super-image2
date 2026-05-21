@@ -34,21 +34,6 @@ export function SettingsPanel() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("idle");
   const [connectionError, setConnectionError] = useState("");
 
-  // Keyboard shortcut: ⌘, to open, Esc to close
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.metaKey && e.key === ",") {
-        e.preventDefault();
-        setSettingsPanelOpen(!settingsPanelOpen);
-      }
-      if (e.key === "Escape" && settingsPanelOpen) {
-        setSettingsPanelOpen(false);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [settingsPanelOpen, setSettingsPanelOpen]);
-
   // Auto-hide connection status after success
   useEffect(() => {
     if (connectionStatus === "success") {
@@ -89,16 +74,16 @@ export function SettingsPanel() {
 
   return (
     <>
-      {/* Backdrop for mobile */}
+      {/* Backdrop */}
       {settingsPanelOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 md:hidden"
+          className="fixed inset-0 z-40 bg-black/20"
           onClick={() => setSettingsPanelOpen(false)}
         />
       )}
 
       <div
-        className={`fixed right-0 top-0 z-50 h-full w-80 max-w-full transform border-l border-border bg-background transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`fixed right-0 top-0 z-50 h-full w-full border-l border-border bg-background transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:w-80 ${
           settingsPanelOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

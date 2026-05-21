@@ -111,8 +111,9 @@ export function Sidebar() {
         <Input
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-          placeholder="Search sessions..."
+          placeholder="Search sessions... (⌘K)"
           className="h-8 text-xs"
+          data-sidebar-search=""
         />
       </div>
 
