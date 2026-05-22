@@ -7,6 +7,7 @@ import { useCallback, useEffect } from "react";
 import { ChatInput } from "@/components/chat-input";
 import { EditSourcePreview } from "@/components/edit-source-preview";
 import { MessageList } from "@/components/message-list";
+import { getAttachmentsByMessage } from "@/lib/db";
 import { useChatStore } from "@/stores/chat-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -81,11 +82,20 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
 
       if (isEditSession && sourceImageId) {
         await sendEdit(sessionId, userMsg.content, sourceImageId, retryParams);
+      } else if (userMsg.attachments && userMsg.attachments.length > 0) {
+        // Reload attachment blobs from IndexedDB and retry as generateWithRefs
+        const stored = await getAttachmentsByMessage(userMsg.id);
+        const files = stored.map((a) => new File([a.blob], a.name, { type: a.mimeType }));
+        if (files.length > 0) {
+          await sendGenerateWithRefs(sessionId, userMsg.content, files, retryParams);
+        } else {
+          await sendGenerate(sessionId, userMsg.content, retryParams);
+        }
       } else {
         await sendGenerate(sessionId, userMsg.content, retryParams);
       }
     },
-    [sessionId, isEditSession, sourceImageId, sendGenerate, sendEdit],
+    [sessionId, isEditSession, sourceImageId, sendGenerate, sendEdit, sendGenerateWithRefs],
   );
 
   const handleEditImage = useCallback(
