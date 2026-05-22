@@ -1,6 +1,14 @@
 "use client";
 
+import {
+  CloseOutlined,
+  CopyOutlined,
+  DownloadOutlined,
+  LeftOutlined,
+  RightOutlined,
+} from "@ant-design/icons";
 import type { ImageResult } from "@super-image/utils";
+import { Button, Spin } from "antd";
 import { useCallback, useEffect, useState } from "react";
 
 import { getImage } from "@/lib/db";
@@ -14,15 +22,13 @@ interface LightboxProps {
 export function Lightbox({ images, initialIndex, onClose }: LightboxProps) {
   const [index, setIndex] = useState(initialIndex);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState<string>("");
+  const [dimensions, setDimensions] = useState("");
 
   const current = images[index];
 
-  // Load image blob
   useEffect(() => {
     if (!current) return;
     let url: string | null = null;
-
     async function loadBlob() {
       const stored = await getImage(current.id);
       if (stored) {
@@ -31,13 +37,9 @@ export function Lightbox({ images, initialIndex, onClose }: LightboxProps) {
       }
     }
     loadBlob();
-
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
+    return () => { if (url) URL.revokeObjectURL(url); };
   }, [current]);
 
-  // Get image dimensions
   useEffect(() => {
     if (!blobUrl) return;
     const img = new Image();
@@ -45,13 +47,8 @@ export function Lightbox({ images, initialIndex, onClose }: LightboxProps) {
     img.src = blobUrl;
   }, [blobUrl]);
 
-  const handlePrev = useCallback(() => {
-    setIndex((i) => (i > 0 ? i - 1 : images.length - 1));
-  }, [images.length]);
-
-  const handleNext = useCallback(() => {
-    setIndex((i) => (i < images.length - 1 ? i + 1 : 0));
-  }, [images.length]);
+  const handlePrev = useCallback(() => setIndex((i) => (i > 0 ? i - 1 : images.length - 1)), [images.length]);
+  const handleNext = useCallback(() => setIndex((i) => (i < images.length - 1 ? i + 1 : 0)), [images.length]);
 
   const handleDownload = useCallback(async () => {
     if (!current) return;
@@ -70,15 +67,10 @@ export function Lightbox({ images, initialIndex, onClose }: LightboxProps) {
     const stored = await getImage(current.id);
     if (!stored) return;
     try {
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": stored.blob }),
-      ]);
-    } catch {
-      // Clipboard API may not be available
-    }
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": stored.blob })]);
+    } catch { /* noop */ }
   }, [current]);
 
-  // Keyboard navigation
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -93,84 +85,87 @@ export function Lightbox({ images, initialIndex, onClose }: LightboxProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.8)",
+        backdropFilter: "blur(4px)",
+        animation: "fadeIn 200ms ease",
+      }}
     >
-      {/* Close button */}
-      <button
+      <Button
+        shape="circle"
+        icon={<CloseOutlined />}
         onClick={onClose}
-        className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
-      >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      </button>
+        style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff" }}
+      />
 
-      {/* Navigation arrows */}
       {images.length > 1 && (
         <>
-          <button
+          <Button
+            shape="circle"
+            icon={<LeftOutlined />}
             onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-            className="absolute left-4 rounded-full bg-white/10 p-3 text-white hover:bg-white/20 transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M12 4l-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <button
+            style={{ position: "absolute", left: 16, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff" }}
+            size="large"
+          />
+          <Button
+            shape="circle"
+            icon={<RightOutlined />}
             onClick={(e) => { e.stopPropagation(); handleNext(); }}
-            className="absolute right-4 rounded-full bg-white/10 p-3 text-white hover:bg-white/20 transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M8 4l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+            style={{ position: "absolute", right: 16, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff" }}
+            size="large"
+          />
         </>
       )}
 
-      {/* Image */}
-      <div className="max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+      <div style={{ maxHeight: "90vh", maxWidth: "90vw" }} onClick={(e) => e.stopPropagation()}>
         {blobUrl ? (
           /* eslint-disable-next-line @next/next/no-img-element -- blob URL */
-          <img
-            src={blobUrl}
-            alt="Full size preview"
-            className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg"
-          />
+          <img src={blobUrl} alt="Full size preview" style={{ maxHeight: "85vh", maxWidth: "90vw", objectFit: "contain", borderRadius: 8 }} />
         ) : (
-          <div className="h-64 w-64 animate-pulse rounded-lg bg-white/10" />
+          <div style={{ width: 256, height: 256, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Spin size="large" />
+          </div>
         )}
       </div>
 
-      {/* Bottom bar */}
-      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-4 rounded-full bg-white/10 px-6 py-2.5 backdrop-blur-sm">
-        {dimensions && (
-          <span className="text-xs text-white/70">{dimensions}</span>
-        )}
-        {images.length > 1 && (
-          <span className="text-xs text-white/70">
-            {index + 1} / {images.length}
-          </span>
-        )}
-        <button
+      <div
+        style={{
+          position: "absolute",
+          bottom: 16,
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          borderRadius: 24,
+          background: "rgba(255,255,255,0.1)",
+          backdropFilter: "blur(8px)",
+          padding: "8px 24px",
+        }}
+      >
+        {dimensions && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>{dimensions}</span>}
+        {images.length > 1 && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>{index + 1} / {images.length}</span>}
+        <Button
+          type="text"
+          icon={<DownloadOutlined />}
           onClick={handleDownload}
-          className="rounded-full p-1.5 text-white hover:bg-white/20 transition-colors"
-          title="Download PNG"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 2v8.5M4 8l4 3.5L12 8M2 13.5h12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <button
+          style={{ color: "#fff" }}
+          size="small"
+        />
+        <Button
+          type="text"
+          icon={<CopyOutlined />}
           onClick={handleCopy}
-          className="rounded-full p-1.5 text-white hover:bg-white/20 transition-colors"
-          title="Copy PNG"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <rect x="4.5" y="4.5" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
-            <path d="M11.5 4.5V3A1.5 1.5 0 0010 1.5H3A1.5 1.5 0 001.5 3v7A1.5 1.5 0 003 11.5h1.5" stroke="currentColor" strokeWidth="1.2" />
-          </svg>
-        </button>
+          style={{ color: "#fff" }}
+          size="small"
+        />
       </div>
     </div>
   );

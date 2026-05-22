@@ -20,6 +20,11 @@ class SuperImageDB extends Dexie {
       messages: "id, sessionId, createdAt, [sessionId+createdAt]",
       imageStore: "id, messageId, createdAt",
     });
+    this.version(2).stores({
+      sessions: "id, updatedAt",
+      messages: "id, sessionId, createdAt, [sessionId+createdAt]",
+      imageStore: "id, messageId, createdAt",
+    });
   }
 }
 

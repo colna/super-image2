@@ -3,6 +3,7 @@ import { create } from "zustand";
 
 import {
   addMessage as dbAddMessage,
+  getImage,
   getMessagesBySession,
   saveImage,
   updateMessage as dbUpdateMessage,
@@ -27,6 +28,12 @@ export interface ChatState {
   sendGenerate: (
     sessionId: string,
     prompt: string,
+    params: { size: string; quality: string; n: number },
+  ) => Promise<void>;
+  sendEdit: (
+    sessionId: string,
+    prompt: string,
+    sourceImageId: string,
     params: { size: string; quality: string; n: number },
   ) => Promise<void>;
 }
@@ -143,6 +150,97 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         await updateMessage(aiMsgId, {
           status: "error",
           content: "Generation cancelled",
+        });
+      } else {
+        await updateMessage(aiMsgId, {
+          status: "error",
+          content: (err as Error).message ?? "Unknown error",
+        });
+      }
+    } finally {
+      setGenerating(false);
+      setAbortController(null);
+    }
+  },
+
+  sendEdit: async (sessionId, prompt, sourceImageId, params) => {
+    const { addMessage, updateMessage, setGenerating, setAbortController } = get();
+    const settings = useSettingsStore.getState();
+    const config = settings.providers[settings.activeProviderId];
+    const provider = getProvider(config?.providerType ?? settings.activeProviderId);
+
+    if (!config || !provider || !provider.edit) return;
+
+    // 1. Load source image blob from IndexedDB
+    const stored = await getImage(sourceImageId);
+    if (!stored) return;
+
+    // 2. Add user message
+    const userMsg: Message = {
+      id: crypto.randomUUID(),
+      sessionId,
+      role: "user",
+      type: "edit",
+      content: prompt,
+      sourceImage: sourceImageId,
+      createdAt: Date.now(),
+      status: "done",
+      params: { model: config.defaultModel, ...params },
+    };
+    await addMessage(userMsg);
+
+    // 3. Add pending AI message
+    const aiMsgId = crypto.randomUUID();
+    const aiMsg: Message = {
+      id: aiMsgId,
+      sessionId,
+      role: "assistant",
+      type: "edit",
+      content: "",
+      createdAt: Date.now(),
+      status: "generating",
+      params: { model: config.defaultModel, ...params },
+    };
+    await addMessage(aiMsg);
+
+    // 4. Call provider.edit
+    const controller = new AbortController();
+    setAbortController(controller);
+    setGenerating(true);
+
+    try {
+      const result = await provider.edit(
+        prompt,
+        stored.blob,
+        { model: config.defaultModel, ...params },
+        config,
+        controller.signal,
+      );
+
+      // 5. Decode base64 → Blob → save to IndexedDB
+      const images: ImageResult[] = [];
+      for (const img of result.images) {
+        const bytes = Uint8Array.from(atob(img.b64Json), (c) => c.charCodeAt(0));
+        const blob = new Blob([bytes], { type: "image/png" });
+        await saveImage(img.id, blob, aiMsgId);
+        const localBlobUrl = URL.createObjectURL(blob);
+        images.push({
+          id: img.id,
+          revisedPrompt: img.revisedPrompt,
+          localBlobUrl,
+        });
+      }
+
+      // 6. Update AI message to done
+      await updateMessage(aiMsgId, {
+        status: "done",
+        images,
+      });
+    } catch (err) {
+      if ((err as Error).name === "AbortError") {
+        await updateMessage(aiMsgId, {
+          status: "error",
+          content: "Edit cancelled",
         });
       } else {
         await updateMessage(aiMsgId, {

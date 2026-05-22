@@ -1,6 +1,8 @@
 "use client";
 
+import { CopyOutlined, DownloadOutlined, EditOutlined } from "@ant-design/icons";
 import type { ImageResult } from "@super-image/utils";
+import { Button, Spin } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getImage } from "@/lib/db";
@@ -8,17 +10,17 @@ import { getImage } from "@/lib/db";
 interface ImageCardProps {
   image: ImageResult;
   onClick?: () => void;
+  onEdit?: () => void;
 }
 
-export function ImageCard({ image, onClick }: ImageCardProps) {
+export function ImageCard({ image, onClick, onEdit }: ImageCardProps) {
   const [blobUrl, setBlobUrl] = useState<string | null>(image.localBlobUrl ?? null);
+  const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // Load blob from IndexedDB and create Object URL
   useEffect(() => {
     if (blobUrl) return;
     let url: string | null = null;
-
     async function loadBlob() {
       const stored = await getImage(image.id);
       if (stored) {
@@ -27,10 +29,7 @@ export function ImageCard({ image, onClick }: ImageCardProps) {
       }
     }
     loadBlob();
-
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
+    return () => { if (url) URL.revokeObjectURL(url); };
   }, [image.id, blobUrl]);
 
   const handleDownload = useCallback(async () => {
@@ -48,54 +47,72 @@ export function ImageCard({ image, onClick }: ImageCardProps) {
     const stored = await getImage(image.id);
     if (!stored) return;
     try {
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": stored.blob }),
-      ]);
-    } catch {
-      // Fallback: clipboard API may not be available
-    }
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": stored.blob })]);
+    } catch { /* Clipboard API may not be available */ }
   }, [image.id]);
 
   return (
-    <div className="group relative overflow-hidden rounded-card">
+    <div className="image-card-wrap" style={{ position: "relative", overflow: "hidden", borderRadius: 8 }}>
       {blobUrl ? (
-        /* eslint-disable-next-line @next/next/no-img-element -- blob URL, not optimizable */
+        /* eslint-disable-next-line @next/next/no-img-element -- blob URL */
         <img
           ref={imgRef}
           src={blobUrl}
           alt="Generated image"
-          className="w-full cursor-pointer rounded-card object-cover opacity-0 transition-opacity duration-300"
-          loading="lazy"
           onClick={onClick}
-          onLoad={() => imgRef.current?.classList.replace("opacity-0", "opacity-100")}
+          onLoad={() => setLoaded(true)}
+          style={{
+            width: "100%",
+            borderRadius: 8,
+            objectFit: "cover",
+            cursor: "pointer",
+            opacity: loaded ? 1 : 0,
+            transition: "opacity 0.3s",
+          }}
+          loading="lazy"
         />
       ) : (
-        <div className="aspect-square w-full animate-pulse rounded-card bg-border/50" />
+        <div style={{ aspectRatio: "1", width: "100%", borderRadius: 8, background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Spin />
+        </div>
       )}
 
-      {/* Hover actions */}
-      <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
+      <div
+        className="image-card-actions"
+        style={{
+          position: "absolute",
+          inset: "auto 0 0 0",
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 4,
+          padding: 8,
+          background: "linear-gradient(transparent, rgba(0,0,0,0.5))",
+        }}
+      >
+        {onEdit && (
+          <Button
+            size="small"
+            shape="circle"
+            icon={<EditOutlined style={{ color: "#fff", fontSize: 12 }} />}
+            onClick={onEdit}
+            style={{ background: "rgba(255,255,255,0.2)", border: "none" }}
+          />
+        )}
+        <Button
+          size="small"
+          shape="circle"
+          icon={<DownloadOutlined style={{ color: "#fff", fontSize: 12 }} />}
           onClick={handleDownload}
-          className="rounded-card bg-white/20 p-1.5 text-white backdrop-blur-sm hover:bg-white/30"
-          title="Download"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 2v7.5M3.5 7L7 10.5 10.5 7M2 12h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <button
+          style={{ background: "rgba(255,255,255,0.2)", border: "none" }}
+        />
+        <Button
+          size="small"
+          shape="circle"
+          icon={<CopyOutlined style={{ color: "#fff", fontSize: 12 }} />}
           onClick={handleCopy}
-          className="rounded-card bg-white/20 p-1.5 text-white backdrop-blur-sm hover:bg-white/30"
-          title="Copy to clipboard"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
-            <path d="M10 4V2.5A1.5 1.5 0 008.5 1h-6A1.5 1.5 0 001 2.5v6A1.5 1.5 0 002.5 10H4" stroke="currentColor" strokeWidth="1.2" />
-          </svg>
-        </button>
+          style={{ background: "rgba(255,255,255,0.2)", border: "none" }}
+        />
       </div>
-
     </div>
   );
 }

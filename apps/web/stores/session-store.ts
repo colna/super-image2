@@ -17,6 +17,7 @@ export interface SessionState {
   loadSessions: () => Promise<void>;
   createSession: (session: Session) => Promise<void>;
   setActiveSessionId: (id: string | null) => void;
+  getSession: (id: string) => Session | undefined;
   updateSession: (id: string, changes: Partial<Session>) => Promise<void>;
   removeSession: (id: string) => Promise<void>;
 }
@@ -41,6 +42,8 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
   },
 
   setActiveSessionId: (id) => set({ activeSessionId: id }),
+
+  getSession: (id) => get().sessions.find((s) => s.id === id),
 
   updateSession: async (id, changes) => {
     await dbUpdateSession(id, changes);

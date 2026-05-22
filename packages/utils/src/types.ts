@@ -1,4 +1,6 @@
 // ---- Session ----
+export type SessionType = "generate" | "edit";
+
 export interface Session {
   id: string;
   title: string;
@@ -6,6 +8,8 @@ export interface Session {
   updatedAt: number;
   providerId: string;
   modelId: string;
+  type?: SessionType;
+  sourceImageId?: string;
 }
 
 // ---- Message ----

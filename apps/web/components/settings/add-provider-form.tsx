@@ -1,10 +1,13 @@
 "use client";
 
-import { Button, Input } from "@super-image/ui";
+import { CloseOutlined } from "@ant-design/icons";
+import { Button, Card, Input, Typography } from "antd";
 import { useState } from "react";
 
 import { PROVIDER_TYPES } from "@/lib/providers/provider-types";
 import { useSettingsStore } from "@/stores/settings-store";
+
+const { Text } = Typography;
 
 interface AddProviderFormProps {
   onClose: () => void;
@@ -25,59 +28,60 @@ export function AddProviderForm({ onClose, onAdded }: AddProviderFormProps) {
   };
 
   return (
-    <div className="flex flex-col gap-4 rounded-card border border-border bg-background-card p-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">Add Provider</h3>
-        <button
-          onClick={onClose}
-          className="rounded-card p-1 text-foreground-secondary hover:bg-background-hover"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Provider type */}
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-foreground-secondary">
-          Type
-        </label>
-        <div className="flex flex-col gap-1.5">
-          {PROVIDER_TYPES.map((t) => (
-            <button
-              key={t.type}
-              onClick={() => setSelectedType(t.type)}
-              className={`flex items-center gap-2 rounded-card border p-2.5 text-left text-sm transition-colors ${
-                selectedType === t.type
-                  ? "border-foreground bg-background-hover"
-                  : "border-border hover:bg-background-hover"
-              }`}
-            >
-              <span>{t.icon}</span>
-              <span className="font-medium text-foreground">{t.label}</span>
-            </button>
-          ))}
+    <Card
+      size="small"
+      title="Add Provider"
+      extra={
+        <Button type="text" size="small" icon={<CloseOutlined />} onClick={onClose} />
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Provider type */}
+        <div>
+          <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 6 }}>
+            Type
+          </Text>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {PROVIDER_TYPES.map((t) => (
+              <div
+                key={t.type}
+                onClick={() => setSelectedType(t.type)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  borderRadius: 8,
+                  border: `1px solid ${selectedType === t.type ? "#1a1a1a" : "#e8e8e8"}`,
+                  background: selectedType === t.type ? "#fafafa" : undefined,
+                  padding: 10,
+                  cursor: "pointer",
+                  fontSize: 13,
+                  transition: "all 0.2s",
+                }}
+              >
+                <span>{t.icon}</span>
+                <span style={{ fontWeight: 500 }}>{t.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Display name */}
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-foreground-secondary">
-          Display Name
-        </label>
-        <Input
-          value={name}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setName(e.target.value)
-          }
-          placeholder={meta?.label ?? "My Provider"}
-        />
-      </div>
+        {/* Display name */}
+        <div>
+          <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 6 }}>
+            Display Name
+          </Text>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={meta?.label ?? "My Provider"}
+          />
+        </div>
 
-      <Button onClick={handleAdd} className="w-full">
-        Add Provider
-      </Button>
-    </div>
+        <Button type="primary" block onClick={handleAdd}>
+          Add Provider
+        </Button>
+      </div>
+    </Card>
   );
 }

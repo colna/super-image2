@@ -3,6 +3,7 @@ export { encrypt, decrypt } from "./crypto";
 export { getStorageItem, setStorageItem, removeStorageItem } from "./storage";
 export type {
   Session,
+  SessionType,
   Message,
   MessageRole,
   MessageType,

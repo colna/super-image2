@@ -1,8 +1,11 @@
 "use client";
 
 import type { ProviderConfig } from "@super-image/utils";
+import { Typography } from "antd";
 
 import { ProviderCard } from "./provider-card";
+
+const { Text } = Typography;
 
 interface ProviderListProps {
   providers: ProviderConfig[];
@@ -21,14 +24,23 @@ export function ProviderList({
 }: ProviderListProps) {
   if (providers.length === 0) {
     return (
-      <div className="rounded-card border border-dashed border-border p-4 text-center text-sm text-foreground-secondary">
-        No providers configured
+      <div
+        style={{
+          borderRadius: 8,
+          border: "1px dashed #e8e8e8",
+          padding: 16,
+          textAlign: "center",
+        }}
+      >
+        <Text type="secondary" style={{ fontSize: 13 }}>
+          No providers configured
+        </Text>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {providers.map((p) => (
         <ProviderCard
           key={p.id}

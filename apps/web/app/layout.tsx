@@ -1,3 +1,5 @@
+import { AntdRegistry } from "@ant-design/nextjs-registry";
+import { ConfigProvider } from "antd";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
@@ -13,6 +15,19 @@ export const metadata: Metadata = {
   description: "AI-powered text-to-image generation platform",
 };
 
+const theme = {
+  token: {
+    colorPrimary: "#1A1A1A",
+    borderRadius: 8,
+    fontFamily: "var(--font-inter), system-ui, sans-serif",
+    colorBgContainer: "#ffffff",
+    colorText: "#1A1A1A",
+    colorTextSecondary: "#888888",
+    colorBorder: "#e8e8e8",
+    colorBgLayout: "#f5f5f5",
+  },
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -20,8 +35,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" className={inter.variable}>
-      <body className="bg-background text-foreground font-sans antialiased">
-        {children}
+      <body style={{ fontFamily: "var(--font-inter), system-ui, sans-serif", margin: 0 }}>
+        <AntdRegistry>
+          <ConfigProvider theme={theme}>{children}</ConfigProvider>
+        </AntdRegistry>
       </body>
     </html>
   );

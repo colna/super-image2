@@ -1,8 +1,12 @@
 "use client";
 
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ProviderConfig } from "@super-image/utils";
+import { Badge, Button, Radio, Typography } from "antd";
 
 import { PROVIDER_TYPES } from "@/lib/providers/provider-types";
+
+const { Text } = Typography;
 
 interface ProviderCardProps {
   config: ProviderConfig;
@@ -12,10 +16,10 @@ interface ProviderCardProps {
   onDelete: () => void;
 }
 
-const STATUS_DOT: Record<string, string> = {
-  connected: "bg-green-500",
-  error: "bg-red-500",
-  unknown: "bg-neutral-300",
+const STATUS_COLOR: Record<string, string> = {
+  connected: "#52c41a",
+  error: "#ff4d4f",
+  unknown: "#d9d9d9",
 };
 
 export function ProviderCard({
@@ -29,75 +33,56 @@ export function ProviderCard({
 
   return (
     <div
-      className={`group flex items-center gap-3 rounded-card border p-3 transition-colors ${
-        isActive
-          ? "border-foreground bg-background-hover"
-          : "border-border bg-background-card hover:bg-background-hover"
-      }`}
+      className="provider-card"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        borderRadius: 8,
+        border: `1px solid ${isActive ? "#1a1a1a" : "#e8e8e8"}`,
+        background: isActive ? "#fafafa" : "#fff",
+        padding: 12,
+        cursor: "pointer",
+        transition: "all 0.2s",
+      }}
+      onClick={onSelect}
     >
       {/* Radio */}
-      <button
-        onClick={onSelect}
-        className="shrink-0"
-        aria-label={`Select ${config.displayName}`}
-      >
-        <div
-          className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
-            isActive ? "border-foreground" : "border-foreground-secondary"
-          }`}
-        >
-          {isActive && <div className="h-2 w-2 rounded-full bg-foreground" />}
-        </div>
-      </button>
+      <Radio checked={isActive} onClick={(e) => e.stopPropagation()} />
 
       {/* Status dot */}
-      <div
-        className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[config.connectionStatus] ?? STATUS_DOT.unknown}`}
+      <Badge
+        color={STATUS_COLOR[config.connectionStatus] ?? STATUS_COLOR.unknown}
         title={config.connectionStatus}
       />
 
       {/* Info */}
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium text-foreground">
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <Text strong style={{ fontSize: 13, display: "block" }} ellipsis>
           {config.displayName}
-        </div>
-        <div className="truncate text-xs text-foreground-secondary">
+        </Text>
+        <Text type="secondary" style={{ fontSize: 11 }} ellipsis>
           {meta?.icon} {meta?.label ?? config.providerType}
-        </div>
+        </Text>
       </div>
 
       {/* Actions */}
-      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
-          onClick={onEdit}
-          className="rounded-card p-1 text-foreground-secondary hover:bg-background-hover hover:text-foreground"
+      <div className="provider-card-actions" style={{ display: "flex", gap: 2 }}>
+        <Button
+          type="text"
+          size="small"
+          icon={<EditOutlined style={{ fontSize: 12 }} />}
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
           aria-label="Edit"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M10.5 1.5L12.5 3.5L4 12H2V10L10.5 1.5Z"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          onClick={onDelete}
-          className="rounded-card p-1 text-foreground-secondary hover:bg-red-50 hover:text-red-600"
+        />
+        <Button
+          type="text"
+          size="small"
+          danger
+          icon={<DeleteOutlined style={{ fontSize: 12 }} />}
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
           aria-label="Delete"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M2.5 4h9M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3.5 4l.5 8h6l.5-8"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+        />
       </div>
     </div>
   );

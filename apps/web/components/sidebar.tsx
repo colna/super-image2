@@ -1,11 +1,19 @@
 "use client";
 
-import { Input } from "@super-image/ui";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import type { Session } from "@super-image/utils";
+import { Button, Input, Popconfirm, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useSessionStore } from "@/stores/session-store";
+
+const { Text } = Typography;
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -33,7 +41,6 @@ export function Sidebar() {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     loadSessions();
@@ -70,7 +77,6 @@ export function Sidebar() {
   const handleDeleteSession = useCallback(
     async (id: string) => {
       await removeSession(id);
-      setConfirmDeleteId(null);
       if (activeSessionId === id) {
         const remaining = sessions.filter((s) => s.id !== id);
         if (remaining.length > 0) {
@@ -94,46 +100,45 @@ export function Sidebar() {
   );
 
   return (
-    <div className="flex h-full flex-col">
-      {/* New chat button */}
-      <button
-        onClick={handleNewSession}
-        className="mx-4 mb-3 mt-4 flex items-center gap-2 rounded-card border border-border px-3 py-2 text-sm text-foreground hover:bg-background-hover transition-colors"
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-        New Chat
-      </button>
-
-      {/* Search */}
-      <div className="px-4 mb-2">
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ padding: "16px 16px 8px" }}>
+        <Button block icon={<PlusOutlined />} onClick={handleNewSession} style={{ marginBottom: 8 }}>
+          New Chat
+        </Button>
         <Input
+          prefix={<SearchOutlined style={{ color: "#bbb" }} />}
           value={search}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           placeholder="Search sessions... (⌘K)"
-          className="h-8 text-xs"
+          size="small"
+          allowClear
           data-sidebar-search=""
         />
       </div>
 
-      {/* Session list */}
-      <div className="flex-1 overflow-y-auto px-2">
+      <div style={{ flex: 1, overflowY: "auto", padding: "4px 8px" }}>
         {filteredSessions.length === 0 ? (
-          <p className="px-2 py-4 text-center text-xs text-foreground-secondary">
+          <Text type="secondary" style={{ display: "block", textAlign: "center", padding: "16px 8px", fontSize: 12 }}>
             {search ? "No matching sessions" : "No sessions yet"}
-          </p>
+          </Text>
         ) : (
           filteredSessions.map((session) => (
             <div
               key={session.id}
-              className={`group relative mb-0.5 flex items-center rounded-card px-3 py-2 cursor-pointer transition-colors ${activeSessionId === session.id
-                  ? "bg-background-hover border-l-2 border-foreground"
-                  : "hover:bg-background-hover"
-                }`}
               onClick={() => handleSelectSession(session.id)}
+              className="sidebar-item"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "8px 12px",
+                marginBottom: 2,
+                borderRadius: 8,
+                cursor: "pointer",
+                background: activeSessionId === session.id ? "#f0f0f0" : undefined,
+                borderLeft: activeSessionId === session.id ? "2px solid #1a1a1a" : "2px solid transparent",
+              }}
             >
-              <div className="flex-1 min-w-0">
+              <div style={{ flex: 1, minWidth: 0 }}>
                 {editingId === session.id ? (
                   <input
                     value={editTitle}
@@ -143,57 +148,46 @@ export function Sidebar() {
                       if (e.key === "Escape") setEditingId(null);
                     }}
                     onBlur={() => handleRenameSubmit(session.id)}
-                    className="w-full bg-transparent text-sm text-foreground outline-none"
+                    style={{ width: "100%", border: "none", outline: "none", background: "transparent", fontSize: 13 }}
                     autoFocus
                     onClick={(e) => e.stopPropagation()}
                   />
                 ) : (
-                  <p className="truncate text-sm text-foreground">{session.title}</p>
+                  <div style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                    {session.type === "edit" && (
+                      <EditOutlined style={{ fontSize: 10, color: "#999", flexShrink: 0 }} />
+                    )}
+                    {session.title}
+                  </div>
                 )}
-                <p className="text-[10px] text-foreground-secondary">
-                  {timeAgo(session.updatedAt)}
-                </p>
+                <div style={{ fontSize: 10, color: "#999" }}>{timeAgo(session.updatedAt)}</div>
               </div>
 
-              {/* Actions */}
-              <div className="ml-2 flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingId(session.id);
-                    setEditTitle(session.title);
-                  }}
-                  className="rounded p-1 text-foreground-secondary hover:text-foreground hover:bg-background"
-                  title="Rename"
+              <div className="sidebar-item-actions" style={{ marginLeft: 8, display: "flex", gap: 2 }}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined style={{ fontSize: 12 }} />}
+                  onClick={(e) => { e.stopPropagation(); setEditingId(session.id); setEditTitle(session.title); }}
+                  style={{ width: 24, height: 24, minWidth: 24 }}
+                />
+                <Popconfirm
+                  title="Delete this session?"
+                  onConfirm={(e) => { e?.stopPropagation(); handleDeleteSession(session.id); }}
+                  onCancel={(e) => e?.stopPropagation()}
+                  okText="Delete"
+                  cancelText="Cancel"
+                  okButtonProps={{ danger: true }}
                 >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M8 1.5l2.5 2.5L4 10.5H1.5V8L8 1.5z" stroke="currentColor" strokeWidth="1" />
-                  </svg>
-                </button>
-                {confirmDeleteId === session.id ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteSession(session.id);
-                    }}
-                    className="rounded px-1.5 py-0.5 text-[10px] text-red-600 hover:bg-red-50"
-                  >
-                    Confirm
-                  </button>
-                ) : (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDeleteId(session.id);
-                    }}
-                    className="rounded p-1 text-foreground-secondary hover:text-red-600 hover:bg-background"
-                    title="Delete"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 3h8M4.5 3V2h3v1M3 3v7.5h6V3" stroke="currentColor" strokeWidth="1" />
-                    </svg>
-                  </button>
-                )}
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined style={{ fontSize: 12 }} />}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ width: 24, height: 24, minWidth: 24 }}
+                  />
+                </Popconfirm>
               </div>
             </div>
           ))

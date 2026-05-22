@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@super-image/ui";
+import { SendOutlined } from "@ant-design/icons";
+import { Button, Select, Space } from "antd";
 import { useCallback, useRef, useState } from "react";
 
 import { getProvider } from "@/lib/providers";
@@ -64,81 +59,74 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   if (!config || !providerDef) return null;
 
   return (
-    <div className="shrink-0 border-t border-border bg-background p-4">
+    <div style={{ flexShrink: 0, borderTop: "1px solid #e8e8e8", background: "#fff", padding: 16 }}>
       {/* Quick params bar */}
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-foreground-secondary">Size</span>
+      <Space wrap size={12} style={{ marginBottom: 8 }}>
+        <Space size={4} align="center">
+          <span style={{ fontSize: 12, color: "#888" }}>Size</span>
           <Select
             value={config.defaultParams.size}
-            onValueChange={(v) =>
+            onChange={(v) =>
               updateProviderField(activeProviderId, "defaultParams", {
                 ...config.defaultParams,
                 size: v,
               })
             }
-          >
-            <SelectTrigger className="h-7 w-auto min-w-[100px] px-2 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {providerDef.supportedSizes.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            size="small"
+            style={{ minWidth: 110 }}
+            options={providerDef.supportedSizes.map((s) => ({ label: s, value: s }))}
+          />
+        </Space>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-foreground-secondary">Quality</span>
+        <Space size={4} align="center">
+          <span style={{ fontSize: 12, color: "#888" }}>Quality</span>
           <Select
             value={config.defaultParams.quality}
-            onValueChange={(v) =>
+            onChange={(v) =>
               updateProviderField(activeProviderId, "defaultParams", {
                 ...config.defaultParams,
                 quality: v,
               })
             }
-          >
-            <SelectTrigger className="h-7 w-auto min-w-[80px] px-2 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {providerDef.supportedQualities.map((q) => (
-                <SelectItem key={q} value={q}>{q}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            size="small"
+            style={{ minWidth: 90 }}
+            options={providerDef.supportedQualities.map((q) => ({ label: q, value: q }))}
+          />
+        </Space>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-foreground-secondary">N</span>
+        <Space size={4} align="center">
+          <span style={{ fontSize: 12, color: "#888" }}>N</span>
           <Select
-            value={String(config.defaultParams.n)}
-            onValueChange={(v) =>
+            value={config.defaultParams.n}
+            onChange={(v) =>
               updateProviderField(activeProviderId, "defaultParams", {
                 ...config.defaultParams,
-                n: parseInt(v, 10),
+                n: v,
               })
             }
-          >
-            <SelectTrigger className="h-7 w-auto min-w-[48px] px-2 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: providerDef.maxN }, (_, i) => i + 1).map((n) => (
-                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+            size="small"
+            style={{ minWidth: 56 }}
+            options={Array.from({ length: providerDef.maxN }, (_, i) => ({
+              label: String(i + 1),
+              value: i + 1,
+            }))}
+          />
+        </Space>
+      </Space>
 
       {/* Input area */}
       <div
-        className={`flex items-end gap-2 rounded-bubble border border-border bg-background-card p-2 transition-all ${
-          shake ? "animate-shake" : ""
-        }`}
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          gap: 8,
+          borderRadius: 12,
+          border: "1px solid #e8e8e8",
+          background: "#fafafa",
+          padding: 8,
+          transition: "all 0.2s",
+          animation: shake ? "shake 0.5s ease-in-out" : undefined,
+        }}
       >
         <textarea
           ref={textareaRef}
@@ -151,22 +139,28 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           placeholder={disabled ? "Generating..." : "Describe the image you want to create..."}
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-foreground-placeholder focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ minHeight: "36px", maxHeight: "160px" }}
+          style={{
+            flex: 1,
+            resize: "none",
+            background: "transparent",
+            fontSize: 14,
+            color: "#1a1a1a",
+            border: "none",
+            outline: "none",
+            minHeight: 36,
+            maxHeight: 160,
+            opacity: disabled ? 0.5 : 1,
+            cursor: disabled ? "not-allowed" : undefined,
+          }}
         />
-        <button
+        <Button
+          type="primary"
+          icon={<SendOutlined />}
           onClick={handleSend}
           disabled={disabled || !value.trim()}
-          className={`shrink-0 rounded-card p-2 transition-colors ${
-            value.trim() && !disabled
-              ? "bg-foreground text-white hover:bg-foreground/90"
-              : "bg-border text-foreground-secondary cursor-not-allowed"
-          }`}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M2 14l12-6L2 2v4.67L10 8 2 9.33V14z" fill="currentColor" />
-          </svg>
-        </button>
+          size="small"
+          shape="circle"
+        />
       </div>
     </div>
   );

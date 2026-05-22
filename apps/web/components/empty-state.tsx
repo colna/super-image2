@@ -1,9 +1,12 @@
 "use client";
 
-import { Button } from "@super-image/ui";
+import { SettingOutlined } from "@ant-design/icons";
+import { Button, Card, Col, Row, Typography } from "antd";
 
 import { useSettingsStore } from "@/stores/settings-store";
 import { useUIStore } from "@/stores/ui-store";
+
+const { Title, Paragraph } = Typography;
 
 const EXAMPLE_PROMPTS = [
   "A serene Japanese garden with cherry blossoms at sunset",
@@ -24,20 +27,27 @@ export function EmptyState({ onPromptClick }: EmptyStateProps) {
 
   if (!hasApiKey) {
     return (
-      <div className="flex flex-1 items-center justify-center p-8">
-        <div className="max-w-md text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-background-hover">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-foreground-secondary">
-              <path d="M12 15v-3M12 9h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+      <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
+        <div style={{ maxWidth: 400, textAlign: "center" }}>
+          <div
+            style={{
+              margin: "0 auto 16px",
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              background: "#f5f5f5",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <SettingOutlined style={{ fontSize: 24, color: "#888" }} />
           </div>
-          <h2 className="mb-2 text-lg font-medium text-foreground">
-            Configure API Key
-          </h2>
-          <p className="mb-4 text-sm text-foreground-secondary">
+          <Title level={4}>Configure API Key</Title>
+          <Paragraph type="secondary">
             Add your OpenAI API key to start generating images
-          </p>
-          <Button onClick={() => setSettingsPanelOpen(true)}>
+          </Paragraph>
+          <Button type="primary" onClick={() => setSettingsPanelOpen(true)}>
             Open Settings
           </Button>
         </div>
@@ -46,25 +56,27 @@ export function EmptyState({ onPromptClick }: EmptyStateProps) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8">
-      <div className="max-w-lg">
-        <h2 className="mb-2 text-center text-lg font-medium text-foreground">
-          SuperImage
-        </h2>
-        <p className="mb-6 text-center text-sm text-foreground-secondary">
+    <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
+      <div style={{ maxWidth: 520 }}>
+        <Title level={4} style={{ textAlign: "center" }}>SuperImage</Title>
+        <Paragraph type="secondary" style={{ textAlign: "center", marginBottom: 24 }}>
           Describe the image you want to create
-        </p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        </Paragraph>
+        <Row gutter={[12, 12]}>
           {EXAMPLE_PROMPTS.map((prompt) => (
-            <button
-              key={prompt}
-              onClick={() => onPromptClick(prompt)}
-              className="rounded-card border border-border bg-background-card p-3 text-left text-xs text-foreground-secondary hover:border-foreground/20 hover:text-foreground transition-colors"
-            >
-              {prompt}
-            </button>
+            <Col key={prompt} xs={24} sm={12}>
+              <Card
+                hoverable
+                size="small"
+                onClick={() => onPromptClick(prompt)}
+                style={{ cursor: "pointer" }}
+                styles={{ body: { padding: "12px", fontSize: 12, color: "#666" } }}
+              >
+                {prompt}
+              </Card>
+            </Col>
           ))}
-        </div>
+        </Row>
       </div>
     </div>
   );

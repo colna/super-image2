@@ -6,12 +6,20 @@ interface UserMessageProps {
 
 export function UserMessage({ message }: UserMessageProps) {
   return (
-    <div className="flex justify-end">
-      <div className="max-w-[80%]">
-        <div className="rounded-bubble bg-foreground px-4 py-2.5 text-sm text-white">
-          <p className="whitespace-pre-wrap">{message.content}</p>
+    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ maxWidth: "80%" }}>
+        <div
+          style={{
+            borderRadius: 12,
+            background: "#1a1a1a",
+            padding: "10px 16px",
+            fontSize: 14,
+            color: "#fff",
+          }}
+        >
+          <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{message.content}</p>
         </div>
-        <div className="mt-1 text-right text-[10px] text-foreground-secondary">
+        <div style={{ marginTop: 4, textAlign: "right", fontSize: 10, color: "#bbb" }}>
           {new Date(message.createdAt).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",

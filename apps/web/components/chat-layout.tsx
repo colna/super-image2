@@ -1,6 +1,8 @@
 "use client";
 
+import { MenuOutlined, SettingOutlined } from "@ant-design/icons";
 import type { Session } from "@super-image/utils";
+import { Button, Layout, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useMemo } from "react";
 
@@ -9,6 +11,9 @@ import { Sidebar } from "@/components/sidebar";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { useSessionStore } from "@/stores/session-store";
 import { useUIStore } from "@/stores/ui-store";
+
+const { Header, Sider, Content } = Layout;
+const { Title } = Typography;
 
 export function ChatLayout({ children }: { children: ReactNode }) {
   const { sidebarOpen, toggleSidebar, toggleSettingsPanel, setSettingsPanelOpen } = useUIStore();
@@ -52,70 +57,102 @@ export function ChatLayout({ children }: { children: ReactNode }) {
   useHotkeys(hotkeys);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/20 md:hidden"
-          onClick={() => useUIStore.getState().setSidebarOpen(false)}
-        />
-      )}
+    <>
+      <style>{`
+        @media (max-width: 767px) {
+          .chat-layout-sider {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 40;
+            height: 100vh !important;
+          }
+          .chat-layout-sider.ant-layout-sider-collapsed {
+            transform: translateX(-100%);
+          }
+        }
+      `}</style>
 
-      {/* Sidebar — inline on md+, overlay on mobile */}
-      <aside
-        className={`
-          shrink-0 border-r border-border bg-background overflow-hidden
-          transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
-          max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:w-[280px]
-          md:relative
-          ${sidebarOpen ? "md:w-[280px] max-md:translate-x-0" : "md:w-0 max-md:-translate-x-full"}
-        `}
-      >
-        <div className="h-full w-[280px]">
+      <Layout style={{ height: "100vh", overflow: "hidden" }}>
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div
+            onClick={() => useUIStore.getState().setSidebarOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 30,
+              background: "rgba(0,0,0,0.2)",
+              display: "none",
+            }}
+            className="chat-layout-backdrop"
+          />
+        )}
+
+        <Sider
+          width={280}
+          collapsed={!sidebarOpen}
+          collapsedWidth={0}
+          trigger={null}
+          className="chat-layout-sider"
+          style={{
+            background: "#fff",
+            borderRight: "1px solid #e8e8e8",
+            overflow: "hidden",
+            transition: "all 0.3s cubic-bezier(0.32,0.72,0,1)",
+          }}
+        >
           <Sidebar />
-        </div>
-      </aside>
+        </Sider>
 
-      {/* Main */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* TopBar */}
-        <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleSidebar}
-              className="rounded-card p-1.5 text-foreground-secondary hover:bg-background-hover hover:text-foreground transition-colors"
-              title="Toggle sidebar (⌘\)"
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M3 4.5h12M3 9h12M3 13.5h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </button>
-            <h1 className="text-sm font-semibold text-foreground">SuperImage</h1>
-          </div>
-          <button
-            onClick={toggleSettingsPanel}
-            className="rounded-card p-1.5 text-foreground-secondary hover:bg-background-hover hover:text-foreground transition-colors"
-            title="Settings (⌘,)"
+        <Layout>
+          <Header
+            style={{
+              height: 48,
+              lineHeight: "48px",
+              padding: "0 16px",
+              background: "#fff",
+              borderBottom: "1px solid #e8e8e8",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path
-                d="M7.5 2.25h3l.375 1.875.75.375L13.5 3.75l2.25 2.25-.75 1.875.375.75L17.25 9v3l-1.875.375-.375.75.75 1.875-2.25 2.25-1.875-.75-.75.375L10.5 18.75h-3l-.375-1.875-.75-.375L4.5 17.25 2.25 15l.75-1.875-.375-.75L.75 12V9l1.875-.375.375-.75L2.25 6 4.5 3.75l1.875.75.75-.375L7.5 2.25z"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinejoin="round"
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={toggleSidebar}
+                title="Toggle sidebar (⌘\)"
+                size="small"
               />
-              <circle cx="9" cy="10.5" r="2.25" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-          </button>
-        </header>
+              <Title level={5} style={{ margin: 0, fontSize: 14 }}>
+                SuperImage
+              </Title>
+            </div>
+            <Button
+              type="text"
+              icon={<SettingOutlined />}
+              onClick={toggleSettingsPanel}
+              title="Settings (⌘,)"
+              size="small"
+            />
+          </Header>
 
-        {/* Chat area */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {children}
-        </div>
-      </div>
+          <Content style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {children}
+          </Content>
+        </Layout>
 
-      <SettingsPanel />
-    </div>
+        <SettingsPanel />
+      </Layout>
+
+      <style>{`
+        @media (max-width: 767px) {
+          .chat-layout-backdrop { display: block !important; }
+        }
+      `}</style>
+    </>
   );
 }
