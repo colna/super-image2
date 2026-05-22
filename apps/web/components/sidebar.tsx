@@ -7,7 +7,7 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import type { Session } from "@super-image/utils";
-import { Button, Input, Popconfirm, Typography } from "antd";
+import { Button, Input, Popconfirm, Tag, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -161,7 +161,7 @@ export function Sidebar() {
                 ) : (
                   <div style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
                     {session.type === "edit" && (
-                      <EditOutlined style={{ fontSize: 10, color: "#999", flexShrink: 0 }} />
+                      <Tag color="purple" style={{ fontSize: 10, lineHeight: "16px", padding: "0 4px", margin: 0, flexShrink: 0 }}>Edit</Tag>
                     )}
                     {session.title}
                   </div>

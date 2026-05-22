@@ -45,7 +45,13 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   const handleSend = useCallback(
     async (prompt: string, params: { size: string; quality: string; n: number }, attachments?: File[]) => {
       if (isEditSession && sourceImageId) {
-        await sendEdit(sessionId, prompt, sourceImageId, params);
+        // Chain edits: use the last AI-generated image, fall back to original source
+        const msgs = useChatStore.getState().messages;
+        const lastAiWithImages = [...msgs].reverse().find(
+          (m) => m.role === "assistant" && m.images && m.images.length > 0,
+        );
+        const editImageId = lastAiWithImages?.images?.[0]?.id ?? sourceImageId;
+        await sendEdit(sessionId, prompt, editImageId, params);
       } else if (attachments && attachments.length > 0) {
         await sendGenerateWithRefs(sessionId, prompt, attachments, params);
       } else {
@@ -81,7 +87,13 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
       };
 
       if (isEditSession && sourceImageId) {
-        await sendEdit(sessionId, userMsg.content, sourceImageId, retryParams);
+        // Find the AI image that was the source for this edit attempt
+        // (the last successful AI image before this user message)
+        const prevAi = msgs.slice(0, aiIdx - 1).reverse().find(
+          (m) => m.role === "assistant" && m.images && m.images.length > 0,
+        );
+        const editImageId = prevAi?.images?.[0]?.id ?? sourceImageId;
+        await sendEdit(sessionId, userMsg.content, editImageId, retryParams);
       } else if (userMsg.attachments && userMsg.attachments.length > 0) {
         // Reload attachment blobs from IndexedDB and retry as generateWithRefs
         const stored = await getAttachmentsByMessage(userMsg.id);
