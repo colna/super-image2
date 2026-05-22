@@ -10,6 +10,7 @@ export type {
   ImageResult,
   GenerateParams,
   Model,
+  ConnectionStatus,
   ProviderConfig,
   GenerateOptions,
   GenerateResult,

@@ -24,7 +24,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
   const { providers, activeProviderId, updateProviderField } = useSettingsStore();
   const config = providers[activeProviderId];
-  const providerDef = getProvider(activeProviderId);
+  const providerDef = getProvider(config?.providerType ?? activeProviderId);
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;

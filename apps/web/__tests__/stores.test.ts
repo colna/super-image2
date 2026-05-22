@@ -13,6 +13,8 @@ describe("settings-store", () => {
       providers: {
         openai: {
           id: "openai",
+          providerType: "openai",
+          displayName: "OpenAI",
           apiKey: "",
           baseUrl: "https://api.openai.com/v1",
           defaultModel: "gpt-image-1",
@@ -22,6 +24,7 @@ describe("settings-store", () => {
             quality: "auto",
             n: 1,
           },
+          connectionStatus: "unknown",
         },
       },
       activeProviderId: "openai",
@@ -37,18 +40,24 @@ describe("settings-store", () => {
   it("getActiveProvider returns current provider", () => {
     const provider = useSettingsStore.getState().getActiveProvider();
     expect(provider?.id).toBe("openai");
+    expect(provider?.providerType).toBe("openai");
+    expect(provider?.displayName).toBe("OpenAI");
   });
 
   it("setProvider adds a new provider", () => {
     useSettingsStore.getState().setProvider({
       id: "custom",
+      providerType: "openai",
+      displayName: "Custom",
       apiKey: "key",
       baseUrl: "https://example.com",
       defaultModel: "model-1",
       defaultParams: { model: "model-1", size: "512x512", quality: "auto", n: 1 },
+      connectionStatus: "unknown",
     });
     const state = useSettingsStore.getState();
     expect(state.providers.custom).toBeDefined();
+    expect(state.providers.custom.displayName).toBe("Custom");
   });
 
   it("removeProvider removes a provider", () => {
@@ -57,10 +66,46 @@ describe("settings-store", () => {
     expect(state.providers.openai).toBeUndefined();
   });
 
+  it("removeProvider switches active when deleting active provider", () => {
+    useSettingsStore.getState().setProvider({
+      id: "second",
+      providerType: "openai",
+      displayName: "Second",
+      apiKey: "",
+      baseUrl: "https://api.openai.com/v1",
+      defaultModel: "gpt-image-1",
+      defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
+      connectionStatus: "unknown",
+    });
+    useSettingsStore.getState().removeProvider("openai");
+    const state = useSettingsStore.getState();
+    expect(state.activeProviderId).toBe("second");
+  });
+
   it("updateProviderField updates a single field", () => {
     useSettingsStore.getState().updateProviderField("openai", "apiKey", "sk-test");
     const state = useSettingsStore.getState();
     expect(state.providers.openai.apiKey).toBe("sk-test");
+  });
+
+  it("addProvider creates a new provider with UUID", () => {
+    const id = useSettingsStore.getState().addProvider("openai", "My GPT");
+    const state = useSettingsStore.getState();
+    expect(state.providers[id]).toBeDefined();
+    expect(state.providers[id].providerType).toBe("openai");
+    expect(state.providers[id].displayName).toBe("My GPT");
+    expect(state.providers[id].connectionStatus).toBe("unknown");
+    expect(state.providers[id].baseUrl).toBe("https://api.openai.com/v1");
+  });
+
+  it("updateConnectionStatus sets status and error", () => {
+    useSettingsStore.getState().updateConnectionStatus("openai", "connected");
+    expect(useSettingsStore.getState().providers.openai.connectionStatus).toBe("connected");
+
+    useSettingsStore.getState().updateConnectionStatus("openai", "error", "Bad key");
+    const provider = useSettingsStore.getState().providers.openai;
+    expect(provider.connectionStatus).toBe("error");
+    expect(provider.connectionError).toBe("Bad key");
   });
 });
 

@@ -6,6 +6,19 @@ import {
   openaiProvider,
 } from "../lib/providers";
 
+function makeConfig(overrides: Partial<{ apiKey: string; baseUrl: string }> = {}) {
+  return {
+    id: "openai",
+    providerType: "openai",
+    displayName: "OpenAI",
+    apiKey: overrides.apiKey ?? "sk-test",
+    baseUrl: overrides.baseUrl ?? "https://api.example.com/v1",
+    defaultModel: "gpt-image-1",
+    defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
+    connectionStatus: "unknown" as const,
+  };
+}
+
 // ---- Registry ----
 
 describe("provider registry", () => {
@@ -58,13 +71,7 @@ describe("openai provider", () => {
     const result = await openaiProvider.generate(
       "a cat",
       { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
-      {
-        id: "openai",
-        apiKey: "sk-test",
-        baseUrl: "https://api.example.com/v1",
-        defaultModel: "gpt-image-1",
-        defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
-      },
+      makeConfig(),
     );
 
     expect(fetchSpy).toHaveBeenCalledOnce();
@@ -93,13 +100,7 @@ describe("openai provider", () => {
       openaiProvider.generate(
         "a cat",
         { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
-        {
-          id: "openai",
-          apiKey: "bad-key",
-          baseUrl: "https://api.example.com/v1",
-          defaultModel: "gpt-image-1",
-          defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
-        },
+        makeConfig({ apiKey: "bad-key" }),
       ),
     ).rejects.toThrow("Invalid API key");
   });
@@ -108,13 +109,7 @@ describe("openai provider", () => {
     const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
     globalThis.fetch = fetchSpy;
 
-    const result = await openaiProvider.testConnection({
-      id: "openai",
-      apiKey: "sk-test",
-      baseUrl: "https://api.example.com/v1",
-      defaultModel: "gpt-image-1",
-      defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
-    });
+    const result = await openaiProvider.testConnection(makeConfig());
     expect(result).toBe(true);
   });
 
@@ -122,13 +117,9 @@ describe("openai provider", () => {
     const fetchSpy = vi.fn().mockRejectedValue(new Error("network error"));
     globalThis.fetch = fetchSpy;
 
-    const result = await openaiProvider.testConnection({
-      id: "openai",
-      apiKey: "sk-test",
-      baseUrl: "https://bad.example.com/v1",
-      defaultModel: "gpt-image-1",
-      defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
-    });
+    const result = await openaiProvider.testConnection(
+      makeConfig({ baseUrl: "https://bad.example.com/v1" }),
+    );
     expect(result).toBe(false);
   });
 });

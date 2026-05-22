@@ -22,10 +22,13 @@ const RUN_E2E = process.env.TEST_E2E === "1";
 
 const CONFIG = {
   id: "openai",
+  providerType: "openai",
+  displayName: "OpenAI",
   apiKey: API_KEY,
   baseUrl: BASE_URL,
   defaultModel: "gpt-image-1",
   defaultParams: { model: "gpt-image-1", size: "1024x1024" as const, quality: "low" as const, n: 1 },
+  connectionStatus: "unknown" as const,
 };
 
 const OPTS = { model: "gpt-image-1", size: "1024x1024", quality: "low", n: 1 };
@@ -79,10 +82,13 @@ describe.skipIf(!RUN_E2E)("e2e: real API generate", () => {
   it("testConnection succeeds with valid key", async () => {
     const config = {
       id: "openai",
+      providerType: "openai",
+      displayName: "OpenAI",
       apiKey: API_KEY,
       baseUrl: BASE_URL,
       defaultModel: "gpt-image-1",
       defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "low", n: 1 },
+      connectionStatus: "unknown" as const,
     };
 
     const ok = await openaiProvider.testConnection(config);
@@ -92,10 +98,13 @@ describe.skipIf(!RUN_E2E)("e2e: real API generate", () => {
   it("testConnection fails with invalid key", async () => {
     const config = {
       id: "openai",
+      providerType: "openai",
+      displayName: "OpenAI",
       apiKey: "sk-invalid-key",
       baseUrl: BASE_URL,
       defaultModel: "gpt-image-1",
       defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "low", n: 1 },
+      connectionStatus: "unknown" as const,
     };
 
     const ok = await openaiProvider.testConnection(config);

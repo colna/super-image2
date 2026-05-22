@@ -5,6 +5,19 @@ import { db, addSession, getMessagesBySession, getImage } from "../lib/db";
 import { useChatStore } from "../stores/chat-store";
 import { useSettingsStore } from "../stores/settings-store";
 
+function makeProviderConfig(overrides: Partial<{ apiKey: string }> = {}) {
+  return {
+    id: "openai",
+    providerType: "openai",
+    displayName: "OpenAI",
+    apiKey: overrides.apiKey ?? "sk-test",
+    baseUrl: "https://api.example.com/v1",
+    defaultModel: "gpt-image-1",
+    defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
+    connectionStatus: "unknown" as const,
+  };
+}
+
 beforeEach(async () => {
   await db.sessions.clear();
   await db.messages.clear();
@@ -19,21 +32,11 @@ beforeEach(async () => {
 
 describe("sendGenerate", () => {
   it("creates user + AI messages and stores images", async () => {
-    // Setup settings store with test config
     useSettingsStore.setState({
-      providers: {
-        openai: {
-          id: "openai",
-          apiKey: "sk-test",
-          baseUrl: "https://api.example.com/v1",
-          defaultModel: "gpt-image-1",
-          defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
-        },
-      },
+      providers: { openai: makeProviderConfig() },
       activeProviderId: "openai",
     });
 
-    // Create a session
     const sessionId = "test-session";
     await addSession({
       id: sessionId,
@@ -44,7 +47,6 @@ describe("sendGenerate", () => {
       modelId: "gpt-image-1",
     });
 
-    // Mock fetch to return a valid b64_json response
     const fakeB64 = btoa("fake-png-data");
     vi.stubGlobal(
       "fetch",
@@ -59,14 +61,12 @@ describe("sendGenerate", () => {
       }),
     );
 
-    // Run generate
     await useChatStore.getState().sendGenerate(sessionId, "a cat", {
       size: "1024x1024",
       quality: "auto",
       n: 1,
     });
 
-    // Check store state
     const state = useChatStore.getState();
     expect(state.messages).toHaveLength(2);
     expect(state.messages[0].role).toBe("user");
@@ -76,11 +76,9 @@ describe("sendGenerate", () => {
     expect(state.messages[1].images).toHaveLength(1);
     expect(state.generating).toBe(false);
 
-    // Check DB persistence
     const dbMessages = await getMessagesBySession(sessionId);
     expect(dbMessages).toHaveLength(2);
 
-    // Check image stored in IndexedDB
     const imageId = state.messages[1].images![0].id;
     const storedImage = await getImage(imageId);
     expect(storedImage).toBeDefined();
@@ -89,15 +87,7 @@ describe("sendGenerate", () => {
 
   it("handles API errors gracefully", async () => {
     useSettingsStore.setState({
-      providers: {
-        openai: {
-          id: "openai",
-          apiKey: "sk-bad",
-          baseUrl: "https://api.example.com/v1",
-          defaultModel: "gpt-image-1",
-          defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
-        },
-      },
+      providers: { openai: makeProviderConfig({ apiKey: "sk-bad" }) },
       activeProviderId: "openai",
     });
 
@@ -135,15 +125,7 @@ describe("sendGenerate", () => {
 
   it("supports cancellation via AbortController", async () => {
     useSettingsStore.setState({
-      providers: {
-        openai: {
-          id: "openai",
-          apiKey: "sk-test",
-          baseUrl: "https://api.example.com/v1",
-          defaultModel: "gpt-image-1",
-          defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
-        },
-      },
+      providers: { openai: makeProviderConfig() },
       activeProviderId: "openai",
     });
 
@@ -157,7 +139,6 @@ describe("sendGenerate", () => {
       modelId: "gpt-image-1",
     });
 
-    // Mock a long-running fetch that can be aborted
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((_url: string, opts: RequestInit) =>
@@ -169,14 +150,12 @@ describe("sendGenerate", () => {
       ),
     );
 
-    // Start generation and immediately cancel
     const generatePromise = useChatStore.getState().sendGenerate(sessionId, "a bird", {
       size: "1024x1024",
       quality: "auto",
       n: 1,
     });
 
-    // Wait a tick for the abort controller to be set
     await new Promise((r) => setTimeout(r, 10));
     useChatStore.getState().cancelGeneration();
 

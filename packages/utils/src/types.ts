@@ -48,12 +48,18 @@ export interface Model {
   name: string;
 }
 
+export type ConnectionStatus = "unknown" | "connected" | "error";
+
 export interface ProviderConfig {
   id: string;
+  providerType: string;
+  displayName: string;
   apiKey: string;
   baseUrl: string;
   defaultModel: string;
   defaultParams: GenerateParams;
+  connectionStatus: ConnectionStatus;
+  connectionError?: string;
 }
 
 export interface GenerateOptions {

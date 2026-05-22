@@ -36,10 +36,13 @@ export async function POST(request: Request) {
       { model, size, quality, n },
       {
         id: providerId,
+        providerType: providerId,
+        displayName: providerId,
         apiKey,
         baseUrl,
         defaultModel: model,
         defaultParams: { model, size, quality, n },
+        connectionStatus: "unknown",
       },
     );
 

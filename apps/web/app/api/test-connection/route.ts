@@ -30,10 +30,13 @@ export async function POST(request: Request) {
 
     const ok = await provider.testConnection({
       id: providerId,
+      providerType: providerId,
+      displayName: providerId,
       apiKey,
       baseUrl,
       defaultModel: provider.defaultModel,
       defaultParams: { model: provider.defaultModel, size: "1024x1024", quality: "auto", n: 1 },
+      connectionStatus: "unknown",
     });
 
     return NextResponse.json({ ok });

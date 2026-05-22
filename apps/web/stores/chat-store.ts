@@ -75,7 +75,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     const { addMessage, updateMessage, setGenerating, setAbortController } = get();
     const settings = useSettingsStore.getState();
     const config = settings.providers[settings.activeProviderId];
-    const provider = getProvider(settings.activeProviderId);
+    const provider = getProvider(config?.providerType ?? settings.activeProviderId);
 
     if (!config || !provider) return;
 
