@@ -28,6 +28,13 @@ const theme = {
     colorBorder: "#e8e8e8",
     colorBgLayout: "#f5f5f5",
   },
+  components: {
+    Select: {
+      optionSelectedBg: "#f0f0f0",
+      optionActiveBg: "#f5f5f5",
+      optionSelectedColor: "#1A1A1A",
+    },
+  },
 };
 
 export default function RootLayout({
