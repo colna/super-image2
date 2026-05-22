@@ -233,12 +233,12 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       <div
         style={{
           display: "flex",
-          alignItems: "flex-end",
+          alignItems: "center",
           gap: 8,
           borderRadius: 12,
           border: `1px solid ${dragOver ? "#1a1a1a" : "#e8e8e8"}`,
           background: dragOver ? "#f0f0f0" : "#fafafa",
-          padding: 8,
+          padding: "6px 8px",
           transition: "all 0.2s",
           animation: shake ? "shake 0.5s ease-in-out" : undefined,
         }}
@@ -280,10 +280,12 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             resize: "none",
             background: "transparent",
             fontSize: 14,
+            lineHeight: "20px",
             color: "#1a1a1a",
             border: "none",
             outline: "none",
-            minHeight: 36,
+            padding: "6px 0",
+            minHeight: 32,
             maxHeight: 160,
             opacity: disabled ? 0.5 : 1,
             cursor: disabled ? "not-allowed" : undefined,
