@@ -4,6 +4,7 @@ import { SendOutlined } from "@ant-design/icons";
 import { Button, Select, Space } from "antd";
 import { useCallback, useRef, useState } from "react";
 
+import { useI18n } from "@/lib/i18n";
 import { getProvider } from "@/lib/providers";
 import { useSettingsStore } from "@/stores/settings-store";
 
@@ -16,6 +17,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [shake, setShake] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { t } = useI18n();
 
   const { providers, activeProviderId, updateProviderField } = useSettingsStore();
   const config = providers[activeProviderId];
@@ -63,7 +65,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       {/* Quick params bar */}
       <Space wrap size={12} style={{ marginBottom: 8 }}>
         <Space size={4} align="center">
-          <span style={{ fontSize: 12, color: "#888" }}>Size</span>
+          <span style={{ fontSize: 12, color: "#888" }}>{t("chat.size")}</span>
           <Select
             value={config.defaultParams.size}
             onChange={(v) =>
@@ -79,7 +81,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         </Space>
 
         <Space size={4} align="center">
-          <span style={{ fontSize: 12, color: "#888" }}>Quality</span>
+          <span style={{ fontSize: 12, color: "#888" }}>{t("chat.quality")}</span>
           <Select
             value={config.defaultParams.quality}
             onChange={(v) =>
@@ -95,7 +97,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         </Space>
 
         <Space size={4} align="center">
-          <span style={{ fontSize: 12, color: "#888" }}>N</span>
+          <span style={{ fontSize: 12, color: "#888" }}>{t("chat.n")}</span>
           <Select
             value={config.defaultParams.n}
             onChange={(v) =>
@@ -136,7 +138,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             adjustHeight();
           }}
           onKeyDown={handleKeyDown}
-          placeholder={disabled ? "Generating..." : "Describe the image you want to create..."}
+          placeholder={disabled ? t("chat.placeholderGenerating") : t("chat.placeholder")}
           disabled={disabled}
           rows={1}
           style={{

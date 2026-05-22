@@ -1,0 +1,19 @@
+{
+  "app.title": "SuperImage — AI Image Generation",
+  "app.description": "Generate stunning images from text with AI",
+
+  "hero.title": "SuperImage",
+  "hero.desc": "Generate stunning images from text. Powered by GPT‑Image‑1. Lossless quality. Privacy first. Open source.",
+  "hero.cta": "Start Creating",
+
+  "feature.losslessTitle": "Lossless Pipeline",
+  "feature.losslessDesc": "Images are stored as raw PNGs in your browser — no compression, no quality loss. What the AI generates is exactly what you get.",
+  "feature.chatTitle": "Chat-based Workflow",
+  "feature.chatDesc": "Generate images through natural conversation. Each session keeps full history with prompts, parameters, and results.",
+  "feature.privacyTitle": "Privacy First",
+  "feature.privacyDesc": "Your API key and images stay in your browser. Nothing is sent to our servers — the app talks directly to the AI provider.",
+  "feature.flexibleTitle": "Fast & Flexible",
+  "feature.flexibleDesc": "Switch sizes, quality presets, and batch count on the fly. Supports custom API endpoints and multiple models.",
+
+  "footer.text": "SuperImage © {year} — Built with Next.js, Ant Design, and OpenAI"
+}

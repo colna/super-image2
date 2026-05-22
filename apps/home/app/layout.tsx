@@ -3,6 +3,8 @@ import { ConfigProvider } from "antd";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
+import { Providers } from "@/components/providers";
+
 import "./globals.css";
 
 const inter = Inter({
@@ -33,10 +35,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN" className={inter.variable}>
+    <html lang="en" className={inter.variable}>
       <body style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
         <AntdRegistry>
-          <ConfigProvider theme={theme}>{children}</ConfigProvider>
+          <ConfigProvider theme={theme}>
+            <Providers>{children}</Providers>
+          </ConfigProvider>
         </AntdRegistry>
       </body>
     </html>

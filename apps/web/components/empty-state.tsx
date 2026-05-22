@@ -2,18 +2,13 @@
 
 import { SettingOutlined } from "@ant-design/icons";
 import { Button, Card, Col, Row, Typography } from "antd";
+import { useMemo } from "react";
 
+import { useI18n } from "@/lib/i18n";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useUIStore } from "@/stores/ui-store";
 
 const { Title, Paragraph } = Typography;
-
-const EXAMPLE_PROMPTS = [
-  "A serene Japanese garden with cherry blossoms at sunset",
-  "An astronaut riding a horse on Mars, digital art",
-  "A cozy coffee shop interior with warm lighting, watercolor style",
-  "A futuristic city skyline with flying cars at night",
-];
 
 interface EmptyStateProps {
   onPromptClick: (prompt: string) => void;
@@ -22,8 +17,14 @@ interface EmptyStateProps {
 export function EmptyState({ onPromptClick }: EmptyStateProps) {
   const { providers, activeProviderId } = useSettingsStore();
   const { setSettingsPanelOpen } = useUIStore();
+  const { t } = useI18n();
   const config = providers[activeProviderId];
   const hasApiKey = !!config?.apiKey;
+
+  const prompts = useMemo(
+    () => [t("empty.prompt1"), t("empty.prompt2"), t("empty.prompt3"), t("empty.prompt4")],
+    [t],
+  );
 
   if (!hasApiKey) {
     return (
@@ -43,12 +44,12 @@ export function EmptyState({ onPromptClick }: EmptyStateProps) {
           >
             <SettingOutlined style={{ fontSize: 24, color: "#888" }} />
           </div>
-          <Title level={4}>Configure API Key</Title>
+          <Title level={4}>{t("empty.configureTitle")}</Title>
           <Paragraph type="secondary">
-            Add your OpenAI API key to start generating images
+            {t("empty.configureDesc")}
           </Paragraph>
           <Button type="primary" onClick={() => setSettingsPanelOpen(true)}>
-            Open Settings
+            {t("empty.openSettings")}
           </Button>
         </div>
       </div>
@@ -58,12 +59,12 @@ export function EmptyState({ onPromptClick }: EmptyStateProps) {
   return (
     <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
       <div style={{ maxWidth: 520 }}>
-        <Title level={4} style={{ textAlign: "center" }}>SuperImage</Title>
+        <Title level={4} style={{ textAlign: "center" }}>{t("empty.title")}</Title>
         <Paragraph type="secondary" style={{ textAlign: "center", marginBottom: 24 }}>
-          Describe the image you want to create
+          {t("empty.subtitle")}
         </Paragraph>
         <Row gutter={[12, 12]}>
-          {EXAMPLE_PROMPTS.map((prompt) => (
+          {prompts.map((prompt) => (
             <Col key={prompt} xs={24} sm={12}>
               <Card
                 hoverable

@@ -3,6 +3,8 @@
 import type { ProviderConfig } from "@super-image/utils";
 import { Typography } from "antd";
 
+import { useI18n } from "@/lib/i18n";
+
 import { ProviderCard } from "./provider-card";
 
 const { Text } = Typography;
@@ -22,6 +24,8 @@ export function ProviderList({
   onEdit,
   onDelete,
 }: ProviderListProps) {
+  const { t } = useI18n();
+
   if (providers.length === 0) {
     return (
       <div
@@ -33,7 +37,7 @@ export function ProviderList({
         }}
       >
         <Text type="secondary" style={{ fontSize: 13 }}>
-          No providers configured
+          {t("settings.noProviders")}
         </Text>
       </div>
     );

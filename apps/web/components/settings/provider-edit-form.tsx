@@ -12,6 +12,7 @@ import type { ProviderConfig } from "@super-image/utils";
 import { Button, Card, Input, Select, Space, Typography } from "antd";
 import { useCallback, useState } from "react";
 
+import { useI18n } from "@/lib/i18n";
 import { getProvider } from "@/lib/providers";
 import { useSettingsStore } from "@/stores/settings-store";
 
@@ -25,6 +26,7 @@ interface ProviderEditFormProps {
 export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
   const { updateProviderField, updateConnectionStatus } = useSettingsStore();
   const providerDef = getProvider(config.providerType);
+  const { t } = useI18n();
 
   const [showApiKey, setShowApiKey] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -36,11 +38,11 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
     try {
       const provider = getProvider(config.providerType);
       if (!provider) {
-        updateConnectionStatus(config.id, "error", "Provider not found");
+        updateConnectionStatus(config.id, "error", t("editProvider.providerNotFound"));
         return;
       }
       const ok = await provider.testConnection(config);
-      updateConnectionStatus(config.id, ok ? "connected" : "error", ok ? undefined : "Connection failed");
+      updateConnectionStatus(config.id, ok ? "connected" : "error", ok ? undefined : t("editProvider.connectionFailed"));
     } catch (err) {
       updateConnectionStatus(
         config.id,
@@ -50,14 +52,14 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
     } finally {
       setTesting(false);
     }
-  }, [config, updateConnectionStatus]);
+  }, [config, updateConnectionStatus, t]);
 
   if (!providerDef) return null;
 
   return (
     <Card
       size="small"
-      title={`Edit: ${config.displayName}`}
+      title={t("editProvider.title", { name: config.displayName })}
       extra={
         <Button type="text" size="small" icon={<CloseOutlined />} onClick={onClose} />
       }
@@ -66,19 +68,19 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
         {/* Display Name */}
         <div>
           <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 4 }}>
-            Display Name
+            {t("editProvider.displayName")}
           </Text>
           <Input
             value={config.displayName}
             onChange={(e) => updateProviderField(config.id, "displayName", e.target.value)}
-            placeholder="My Provider"
+            placeholder={t("editProvider.placeholder")}
           />
         </div>
 
         {/* API Key */}
         <div>
           <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 4 }}>
-            API Key
+            {t("editProvider.apiKey")}
           </Text>
           <Input
             type={showApiKey ? "text" : "password"}
@@ -100,7 +102,7 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
         {/* Base URL */}
         <div>
           <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 4 }}>
-            Base URL
+            {t("editProvider.baseUrl")}
           </Text>
           <Input
             value={config.baseUrl}
@@ -112,7 +114,7 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
         {/* Model */}
         <div>
           <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 4 }}>
-            Model
+            {t("editProvider.model")}
           </Text>
           <Select
             value={config.defaultModel}
@@ -126,13 +128,13 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
         {config.connectionStatus === "connected" && (
           <Space style={{ color: "#52c41a", fontSize: 12 }}>
             <CheckCircleOutlined />
-            <span>Connected</span>
+            <span>{t("editProvider.connected")}</span>
           </Space>
         )}
         {config.connectionStatus === "error" && (
           <Space style={{ color: "#ff4d4f", fontSize: 12 }}>
             <CloseCircleOutlined />
-            <span>{config.connectionError ?? "Connection failed"}</span>
+            <span>{config.connectionError ?? t("editProvider.connectionFailed")}</span>
           </Space>
         )}
 
@@ -143,7 +145,7 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
           disabled={!config.apiKey || testing}
           icon={testing ? <LoadingOutlined /> : undefined}
         >
-          {testing ? "Testing..." : "Test Connection"}
+          {testing ? t("editProvider.testing") : t("editProvider.testConnection")}
         </Button>
       </div>
     </Card>

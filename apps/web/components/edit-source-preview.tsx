@@ -5,6 +5,7 @@ import { Alert, Spin, Typography } from "antd";
 import { useEffect, useState } from "react";
 
 import { getImage } from "@/lib/db";
+import { useI18n } from "@/lib/i18n";
 
 const { Text } = Typography;
 
@@ -14,6 +15,7 @@ interface EditSourcePreviewProps {
 
 export function EditSourcePreview({ imageId }: EditSourcePreviewProps) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     let url: string | null = null;
@@ -35,7 +37,7 @@ export function EditSourcePreview({ imageId }: EditSourcePreviewProps) {
       <div style={{ maxWidth: 768, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
           <EditOutlined style={{ fontSize: 14, color: "#888" }} />
-          <Text strong style={{ fontSize: 13 }}>Editing source image</Text>
+          <Text strong style={{ fontSize: 13 }}>{t("edit.sourceTitle")}</Text>
         </div>
 
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -73,7 +75,7 @@ export function EditSourcePreview({ imageId }: EditSourcePreviewProps) {
             type="info"
             showIcon
             icon={<InfoCircleOutlined />}
-            message="Edit mode will send the source image to the API, consuming additional input tokens compared to generating a new image."
+            message={t("edit.sourceWarning")}
             style={{ flex: 1, fontSize: 12 }}
           />
         </div>

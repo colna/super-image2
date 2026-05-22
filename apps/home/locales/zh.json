@@ -1,0 +1,19 @@
+{
+  "app.title": "SuperImage — AI 图片生成",
+  "app.description": "用 AI 从文字生成精美图片",
+
+  "hero.title": "SuperImage",
+  "hero.desc": "用文字生成精美图片。基于 GPT‑Image‑1。无损质量。隐私优先。开源免费。",
+  "hero.cta": "开始创作",
+
+  "feature.losslessTitle": "无损管线",
+  "feature.losslessDesc": "图片以原始 PNG 格式存储在浏览器中——无压缩、无质量损失。AI 生成的就是你得到的。",
+  "feature.chatTitle": "对话式工作流",
+  "feature.chatDesc": "通过自然对话生成图片。每个会话完整保留提示词、参数和结果历史。",
+  "feature.privacyTitle": "隐私优先",
+  "feature.privacyDesc": "你的 API Key 和图片都保存在浏览器中。不会发送任何数据到我们的服务器——应用直接与 AI 服务商通信。",
+  "feature.flexibleTitle": "快速灵活",
+  "feature.flexibleDesc": "随时切换尺寸、质量预设和批量数量。支持自定义 API 端点和多种模型。",
+
+  "footer.text": "SuperImage © {year} — 基于 Next.js、Ant Design 和 OpenAI 构建"
+}

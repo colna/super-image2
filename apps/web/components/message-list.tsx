@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 
 import { AIMessage } from "@/components/ai-message";
 import { UserMessage } from "@/components/user-message";
+import { useI18n } from "@/lib/i18n";
 
 const { Title, Paragraph } = Typography;
 
@@ -18,6 +19,7 @@ interface MessageListProps {
 
 export function MessageList({ messages, onRetry, onCancel, onEdit }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -28,10 +30,10 @@ export function MessageList({ messages, onRetry, onCancel, onEdit }: MessageList
       <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center" }}>
           <Title level={4} style={{ marginBottom: 8 }}>
-            Start a conversation
+            {t("message.startTitle")}
           </Title>
           <Paragraph type="secondary">
-            Describe the image you want to generate
+            {t("message.startDesc")}
           </Paragraph>
         </div>
       </div>

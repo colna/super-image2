@@ -11,23 +11,14 @@ import { Button, Input, Popconfirm, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useI18n } from "@/lib/i18n";
 import { useSessionStore } from "@/stores/session-store";
 
 const { Text } = Typography;
 
-function timeAgo(ts: number): string {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
 export function Sidebar() {
   const router = useRouter();
+  const { t } = useI18n();
   const {
     sessions,
     activeSessionId,
@@ -56,7 +47,7 @@ export function Sidebar() {
     const id = crypto.randomUUID();
     const session: Session = {
       id,
-      title: "New Chat",
+      title: t("sidebar.newChat"),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       providerId: "openai",
@@ -64,7 +55,7 @@ export function Sidebar() {
     };
     await createSession(session);
     router.push(`/chat/${id}`);
-  }, [createSession, router]);
+  }, [createSession, router, t]);
 
   const handleSelectSession = useCallback(
     (id: string) => {
@@ -99,17 +90,31 @@ export function Sidebar() {
     [editTitle, updateSession],
   );
 
+  const timeAgo = useCallback(
+    (ts: number): string => {
+      const diff = Date.now() - ts;
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return t("sidebar.timeJustNow");
+      if (mins < 60) return t("sidebar.timeMinutes", { count: mins });
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return t("sidebar.timeHours", { count: hours });
+      const days = Math.floor(hours / 24);
+      return t("sidebar.timeDays", { count: days });
+    },
+    [t],
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: "16px 16px 8px" }}>
         <Button block icon={<PlusOutlined />} onClick={handleNewSession} style={{ marginBottom: 8 }}>
-          New Chat
+          {t("sidebar.newChat")}
         </Button>
         <Input
           prefix={<SearchOutlined style={{ color: "#bbb" }} />}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search sessions... (⌘K)"
+          placeholder={t("sidebar.searchPlaceholder")}
           size="small"
           allowClear
           data-sidebar-search=""
@@ -119,7 +124,7 @@ export function Sidebar() {
       <div style={{ flex: 1, overflowY: "auto", padding: "4px 8px" }}>
         {filteredSessions.length === 0 ? (
           <Text type="secondary" style={{ display: "block", textAlign: "center", padding: "16px 8px", fontSize: 12 }}>
-            {search ? "No matching sessions" : "No sessions yet"}
+            {search ? t("sidebar.noMatching") : t("sidebar.noSessions")}
           </Text>
         ) : (
           filteredSessions.map((session) => (
@@ -172,11 +177,11 @@ export function Sidebar() {
                   style={{ width: 24, height: 24, minWidth: 24 }}
                 />
                 <Popconfirm
-                  title="Delete this session?"
+                  title={t("sidebar.deleteConfirm")}
                   onConfirm={(e) => { e?.stopPropagation(); handleDeleteSession(session.id); }}
                   onCancel={(e) => e?.stopPropagation()}
-                  okText="Delete"
-                  cancelText="Cancel"
+                  okText={t("sidebar.deleteOk")}
+                  cancelText={t("sidebar.deleteCancel")}
                   okButtonProps={{ danger: true }}
                 >
                   <Button

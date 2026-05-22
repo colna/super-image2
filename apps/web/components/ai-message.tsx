@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/error-state";
 import { ImageCard } from "@/components/image-card";
 import { ImageSkeleton } from "@/components/image-skeleton";
 import { Lightbox } from "@/components/lightbox";
+import { useI18n } from "@/lib/i18n";
 
 const { Text } = Typography;
 
@@ -20,6 +21,7 @@ interface AIMessageProps {
 
 export function AIMessage({ message, onRetry, onCancel, onEdit }: AIMessageProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const { t } = useI18n();
   const isGenerating = message.status === "generating";
   const isError = message.status === "error";
   const isDone = message.status === "done";
@@ -72,7 +74,7 @@ export function AIMessage({ message, onRetry, onCancel, onEdit }: AIMessageProps
           {isDone && message.images?.some((img) => img.revisedPrompt) && (
             <details style={{ marginTop: 8 }}>
               <summary style={{ cursor: "pointer", fontSize: 12, color: "#999" }}>
-                View revised prompt
+                {t("ai.viewRevised")}
               </summary>
               <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: "block" }}>
                 {message.images?.find((img) => img.revisedPrompt)?.revisedPrompt}

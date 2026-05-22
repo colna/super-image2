@@ -1,6 +1,6 @@
 "use client";
 
-import { MenuOutlined, SettingOutlined } from "@ant-design/icons";
+import { MenuOutlined, QuestionCircleOutlined, SettingOutlined } from "@ant-design/icons";
 import type { Session } from "@super-image/utils";
 import { Button, Layout, Typography } from "antd";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,9 @@ import { type ReactNode, useCallback, useMemo } from "react";
 
 import { SettingsPanel } from "@/components/settings-panel";
 import { Sidebar } from "@/components/sidebar";
+import { UserGuide } from "@/components/user-guide";
 import { useHotkeys } from "@/hooks/use-hotkeys";
+import { useI18n } from "@/lib/i18n";
 import { useSessionStore } from "@/stores/session-store";
 import { useUIStore } from "@/stores/ui-store";
 
@@ -16,15 +18,16 @@ const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 export function ChatLayout({ children }: { children: ReactNode }) {
-  const { sidebarOpen, toggleSidebar, toggleSettingsPanel, setSettingsPanelOpen } = useUIStore();
+  const { sidebarOpen, toggleSidebar, toggleSettingsPanel, setSettingsPanelOpen, setGuideOpen } = useUIStore();
   const { createSession } = useSessionStore();
   const router = useRouter();
+  const { t } = useI18n();
 
   const handleNewSession = useCallback(async () => {
     const id = crypto.randomUUID();
     const session: Session = {
       id,
-      title: "New Chat",
+      title: t("sidebar.newChat"),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       providerId: "openai",
@@ -32,7 +35,7 @@ export function ChatLayout({ children }: { children: ReactNode }) {
     };
     await createSession(session);
     router.push(`/chat/${id}`);
-  }, [createSession, router]);
+  }, [createSession, router, t]);
 
   const handleFocusSearch = useCallback(() => {
     const { sidebarOpen: open, setSidebarOpen } = useUIStore.getState();
@@ -124,20 +127,29 @@ export function ChatLayout({ children }: { children: ReactNode }) {
                 type="text"
                 icon={<MenuOutlined />}
                 onClick={toggleSidebar}
-                title="Toggle sidebar (⌘\)"
+                title={`${t("header.toggleSidebar")} (⌘\\)`}
                 size="small"
               />
               <Title level={5} style={{ margin: 0, fontSize: 14 }}>
-                SuperImage
+                {t("app.title")}
               </Title>
             </div>
-            <Button
-              type="text"
-              icon={<SettingOutlined />}
-              onClick={toggleSettingsPanel}
-              title="Settings (⌘,)"
-              size="small"
-            />
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Button
+                type="text"
+                icon={<QuestionCircleOutlined />}
+                onClick={() => setGuideOpen(true)}
+                title={t("header.guide")}
+                size="small"
+              />
+              <Button
+                type="text"
+                icon={<SettingOutlined />}
+                onClick={toggleSettingsPanel}
+                title={`${t("header.settings")} (⌘,)`}
+                size="small"
+              />
+            </div>
           </Header>
 
           <Content style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -146,6 +158,7 @@ export function ChatLayout({ children }: { children: ReactNode }) {
         </Layout>
 
         <SettingsPanel />
+        <UserGuide />
       </Layout>
 
       <style>{`

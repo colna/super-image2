@@ -1,9 +1,10 @@
 "use client";
 
 import { CloseOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Drawer, Typography } from "antd";
+import { Button, Drawer, Segmented, Typography } from "antd";
 import { useMemo, useState } from "react";
 
+import { useI18n, type Locale } from "@/lib/i18n";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useUIStore } from "@/stores/ui-store";
 
@@ -21,6 +22,7 @@ export function SettingsPanel() {
     setActiveProviderId,
     removeProvider,
   } = useSettingsStore();
+  const { locale, setLocale, t } = useI18n();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -44,7 +46,7 @@ export function SettingsPanel() {
 
   return (
     <Drawer
-      title="Settings"
+      title={t("settings.title")}
       placement="right"
       width={384}
       open={settingsPanelOpen}
@@ -54,7 +56,7 @@ export function SettingsPanel() {
     >
       {/* Provider list */}
       <Text type="secondary" style={{ fontSize: 12, fontWeight: 500 }}>
-        Providers
+        {t("settings.providers")}
       </Text>
       <ProviderList
         providers={providerList}
@@ -78,7 +80,7 @@ export function SettingsPanel() {
             setEditingId(null);
           }}
         >
-          Add Provider
+          {t("settings.addProvider")}
         </Button>
       )}
 
@@ -97,6 +99,22 @@ export function SettingsPanel() {
           onClose={() => setEditingId(null)}
         />
       )}
+
+      {/* Language toggle */}
+      <div style={{ marginTop: "auto", borderTop: "1px solid #f0f0f0", paddingTop: 16 }}>
+        <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 8 }}>
+          {t("settings.language")}
+        </Text>
+        <Segmented
+          block
+          value={locale}
+          onChange={(v) => setLocale(v as Locale)}
+          options={[
+            { label: "English", value: "en" },
+            { label: "中文", value: "zh" },
+          ]}
+        />
+      </div>
     </Drawer>
   );
 }

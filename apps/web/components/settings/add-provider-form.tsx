@@ -4,6 +4,7 @@ import { CloseOutlined } from "@ant-design/icons";
 import { Button, Card, Input, Typography } from "antd";
 import { useState } from "react";
 
+import { useI18n } from "@/lib/i18n";
 import { PROVIDER_TYPES } from "@/lib/providers/provider-types";
 import { useSettingsStore } from "@/stores/settings-store";
 
@@ -18,8 +19,9 @@ export function AddProviderForm({ onClose, onAdded }: AddProviderFormProps) {
   const [selectedType, setSelectedType] = useState(PROVIDER_TYPES[0].type);
   const [name, setName] = useState("");
   const { addProvider } = useSettingsStore();
+  const { t } = useI18n();
 
-  const meta = PROVIDER_TYPES.find((t) => t.type === selectedType);
+  const meta = PROVIDER_TYPES.find((pt) => pt.type === selectedType);
 
   const handleAdd = () => {
     const displayName = name.trim() || meta?.label || selectedType;
@@ -30,7 +32,7 @@ export function AddProviderForm({ onClose, onAdded }: AddProviderFormProps) {
   return (
     <Card
       size="small"
-      title="Add Provider"
+      title={t("addProvider.title")}
       extra={
         <Button type="text" size="small" icon={<CloseOutlined />} onClick={onClose} />
       }
@@ -39,28 +41,28 @@ export function AddProviderForm({ onClose, onAdded }: AddProviderFormProps) {
         {/* Provider type */}
         <div>
           <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 6 }}>
-            Type
+            {t("addProvider.type")}
           </Text>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {PROVIDER_TYPES.map((t) => (
+            {PROVIDER_TYPES.map((pt) => (
               <div
-                key={t.type}
-                onClick={() => setSelectedType(t.type)}
+                key={pt.type}
+                onClick={() => setSelectedType(pt.type)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 8,
                   borderRadius: 8,
-                  border: `1px solid ${selectedType === t.type ? "#1a1a1a" : "#e8e8e8"}`,
-                  background: selectedType === t.type ? "#fafafa" : undefined,
+                  border: `1px solid ${selectedType === pt.type ? "#1a1a1a" : "#e8e8e8"}`,
+                  background: selectedType === pt.type ? "#fafafa" : undefined,
                   padding: 10,
                   cursor: "pointer",
                   fontSize: 13,
                   transition: "all 0.2s",
                 }}
               >
-                <span>{t.icon}</span>
-                <span style={{ fontWeight: 500 }}>{t.label}</span>
+                <span>{pt.icon}</span>
+                <span style={{ fontWeight: 500 }}>{pt.label}</span>
               </div>
             ))}
           </div>
@@ -69,17 +71,17 @@ export function AddProviderForm({ onClose, onAdded }: AddProviderFormProps) {
         {/* Display name */}
         <div>
           <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 6 }}>
-            Display Name
+            {t("addProvider.displayName")}
           </Text>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={meta?.label ?? "My Provider"}
+            placeholder={meta?.label ?? t("addProvider.placeholder")}
           />
         </div>
 
         <Button type="primary" block onClick={handleAdd}>
-          Add Provider
+          {t("addProvider.submit")}
         </Button>
       </div>
     </Card>
