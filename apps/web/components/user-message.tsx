@@ -4,6 +4,7 @@ import { FileImageOutlined } from "@ant-design/icons";
 import type { Message } from "@super-image/utils";
 import { useEffect, useState } from "react";
 
+import { ImagePreview } from "@/components/image-preview";
 import { getAttachment } from "@/lib/db";
 
 interface UserMessageProps {
@@ -44,23 +45,24 @@ export function UserMessage({ message }: UserMessageProps) {
         {thumbUrls.length > 0 && (
           <div style={{ display: "flex", gap: 6, marginBottom: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
             {thumbUrls.map((url, i) => (
-              <div
-                key={url}
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={message.attachments?.[i]?.name ?? "attachment"}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
+              <ImagePreview key={url} src={url} alt={message.attachments?.[i]?.name}>
+                <div
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt={message.attachments?.[i]?.name ?? "attachment"}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+              </ImagePreview>
             ))}
           </div>
         )}

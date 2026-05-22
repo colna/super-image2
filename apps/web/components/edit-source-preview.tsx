@@ -4,6 +4,7 @@ import { EditOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { Alert, Spin, Typography } from "antd";
 import { useEffect, useState } from "react";
 
+import { ImagePreview } from "@/components/image-preview";
 import { getImage } from "@/lib/db";
 import { useI18n } from "@/lib/i18n";
 
@@ -42,19 +43,21 @@ export function EditSourcePreview({ imageId }: EditSourcePreviewProps) {
 
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
           {blobUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element -- blob URL */
-            <img
-              src={blobUrl}
-              alt="Source image"
-              style={{
-                width: 80,
-                height: 80,
-                objectFit: "cover",
-                borderRadius: 8,
-                border: "1px solid #e8e8e8",
-                flexShrink: 0,
-              }}
-            />
+            <ImagePreview src={blobUrl} alt="Source image">
+              {/* eslint-disable-next-line @next/next/no-img-element -- blob URL */}
+              <img
+                src={blobUrl}
+                alt="Source image"
+                style={{
+                  width: 80,
+                  height: 80,
+                  objectFit: "cover",
+                  borderRadius: 8,
+                  border: "1px solid #e8e8e8",
+                  flexShrink: 0,
+                }}
+              />
+            </ImagePreview>
           ) : (
             <div
               style={{
