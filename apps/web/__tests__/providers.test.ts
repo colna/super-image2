@@ -109,11 +109,12 @@ describe("openai provider", () => {
     ).rejects.toThrow("Invalid API key");
   });
 
-  it("generateWithRefs calls /images/edits with reference image as FormData", async () => {
+  it("generateWithRefs calls /responses with Responses API format", async () => {
     const mockResponse = {
-      data: [
+      output: [
         {
-          b64_json: "base64imagedata",
+          type: "image_generation_call",
+          result: "base64imagedata",
           revised_prompt: "A red square",
         },
       ],
@@ -125,7 +126,6 @@ describe("openai provider", () => {
     });
     globalThis.fetch = fetchSpy;
 
-    // Use a tiny valid base64 string
     const b64 = btoa("fakepng");
     const result = await openaiProvider.generateWithRefs!(
       "a red square",
@@ -136,26 +136,29 @@ describe("openai provider", () => {
 
     expect(fetchSpy).toHaveBeenCalledOnce();
     const [url, opts] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.example.com/v1/images/edits");
+    expect(url).toBe("https://api.example.com/v1/responses");
     expect(opts.method).toBe("POST");
 
-    // Body should be FormData
-    const body = opts.body as FormData;
-    expect(body).toBeInstanceOf(FormData);
-    expect(body.get("prompt")).toBe("a red square");
-    expect(body.get("model")).toBe("gpt-image-2");
-    expect(body.get("quality")).toBe("low");
-    expect(body.get("response_format")).toBe("b64_json");
-    expect(body.get("image")).toBeInstanceOf(Blob);
+    // Body should be JSON with input array and tools
+    const body = JSON.parse(opts.body as string);
+    expect(body.model).toBe("gpt-image-2");
+    expect(body.input).toHaveLength(2);
+    expect(body.input[0].type).toBe("input_image");
+    expect(body.input[0].image_url).toBe(`data:image/png;base64,${b64}`);
+    expect(body.input[1].type).toBe("input_text");
+    expect(body.input[1].text).toBe("a red square");
+    expect(body.tools).toHaveLength(1);
+    expect(body.tools[0].type).toBe("image_generation");
+    expect(body.tools[0].quality).toBe("low");
 
     expect(result.images).toHaveLength(1);
     expect(result.images[0].b64Json).toBe("base64imagedata");
     expect(result.images[0].revisedPrompt).toBe("A red square");
   });
 
-  it("generateWithRefs uses first image when multiple provided", async () => {
+  it("generateWithRefs passes all reference images in input", async () => {
     const mockResponse = {
-      data: [{ b64_json: "img1data" }],
+      output: [{ type: "image_generation_call", result: "img1data" }],
     };
 
     const fetchSpy = vi.fn().mockResolvedValue({
@@ -176,11 +179,14 @@ describe("openai provider", () => {
       makeConfig(),
     );
 
-    const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.example.com/v1/images/edits");
-    // Uses /images/edits with the first reference image
-    const body = (fetchSpy.mock.calls[0] as [string, RequestInit])[1].body as FormData;
-    expect(body.get("image")).toBeInstanceOf(Blob);
+    const [url, opts] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.example.com/v1/responses");
+    const body = JSON.parse(opts.body as string);
+    // Both images + text prompt = 3 input items
+    expect(body.input).toHaveLength(3);
+    expect(body.input[0].type).toBe("input_image");
+    expect(body.input[1].type).toBe("input_image");
+    expect(body.input[2].type).toBe("input_text");
   });
 
   it("generateWithRefs throws when no reference images", async () => {
