@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
 import { ChatInput } from "@/components/chat-input";
-import { ChatLayout } from "@/components/chat-layout";
 import { EmptyState } from "@/components/empty-state";
 import { useSessionStore } from "@/stores/session-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -49,9 +48,9 @@ export default function ChatPage() {
   );
 
   return (
-    <ChatLayout>
+    <>
       <EmptyState onPromptClick={handlePromptClick} />
       <ChatInput onSend={createAndNavigate} />
-    </ChatLayout>
+    </>
   );
 }

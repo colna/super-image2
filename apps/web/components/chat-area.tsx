@@ -125,7 +125,8 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
         sourceImageId: imageId,
       };
       await createSession(newSession);
-      router.push(`/chat/${newSessionId}`);
+      useSessionStore.getState().setActiveSessionId(newSessionId);
+      router.push(`/chat/${newSessionId}`, { scroll: false });
     },
     [createSession, router],
   );
