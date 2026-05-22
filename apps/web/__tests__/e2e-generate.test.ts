@@ -26,24 +26,35 @@ const CONFIG = {
   displayName: "OpenAI",
   apiKey: API_KEY,
   baseUrl: BASE_URL,
-  defaultModel: "gpt-image-1",
-  defaultParams: { model: "gpt-image-1", size: "1024x1024" as const, quality: "low" as const, n: 1 },
+  defaultModel: "gpt-image-2",
+  defaultParams: {
+    model: "gpt-image-2",
+    size: "1024x1024" as const,
+    quality: "low" as const,
+    n: 1,
+  },
   connectionStatus: "unknown" as const,
 };
 
-const OPTS = { model: "gpt-image-1", size: "1024x1024", quality: "low", n: 1 };
+const OPTS = { model: "gpt-image-2", size: "1024x1024", quality: "low", n: 1 };
 
 /** Retry with exponential backoff for rate-limit / upstream saturation errors */
-async function generateWithRetry(prompt: string, maxRetries = 3): Promise<GenerateResult> {
+async function generateWithRetry(
+  prompt: string,
+  maxRetries = 3,
+): Promise<GenerateResult> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await openaiProvider.generate(prompt, OPTS, CONFIG);
     } catch (err) {
       const msg = (err as Error).message;
-      const isRetryable = msg.includes("饱和") || msg.includes("rate") || msg.includes("429");
+      const isRetryable =
+        msg.includes("饱和") || msg.includes("rate") || msg.includes("429");
       if (!isRetryable || attempt === maxRetries) throw err;
       const delay = (attempt + 1) * 5_000; // 5s, 10s, 15s
-      console.log(`⏳ Attempt ${attempt + 1} rate-limited, retrying in ${delay / 1000}s...`);
+      console.log(
+        `⏳ Attempt ${attempt + 1} rate-limited, retrying in ${delay / 1000}s...`,
+      );
       await new Promise((r) => setTimeout(r, delay));
     }
   }
@@ -51,33 +62,29 @@ async function generateWithRetry(prompt: string, maxRetries = 3): Promise<Genera
 }
 
 describe.skipIf(!RUN_E2E)("e2e: real API generate", () => {
-  it(
-    "generates an image and returns valid b64_json",
-    async () => {
-      const result = await generateWithRetry("a white cat, simple sketch");
+  it("generates an image and returns valid b64_json", async () => {
+    const result = await generateWithRetry("a white cat, simple sketch");
 
-      // Verify structure
-      expect(result.images).toHaveLength(1);
-      const img = result.images[0];
-      expect(img.id).toBeTruthy();
-      expect(img.b64Json).toBeTruthy();
-      expect(img.b64Json.length).toBeGreaterThan(1000);
+    // Verify structure
+    expect(result.images).toHaveLength(1);
+    const img = result.images[0];
+    expect(img.id).toBeTruthy();
+    expect(img.b64Json).toBeTruthy();
+    expect(img.b64Json.length).toBeGreaterThan(1000);
 
-      // Verify it's valid base64 → can decode to bytes
-      const bytes = Uint8Array.from(atob(img.b64Json), (c) => c.charCodeAt(0));
-      expect(bytes.length).toBeGreaterThan(1000);
+    // Verify it's valid base64 → can decode to bytes
+    const bytes = Uint8Array.from(atob(img.b64Json), (c) => c.charCodeAt(0));
+    expect(bytes.length).toBeGreaterThan(1000);
 
-      // Verify PNG signature (first 8 bytes)
-      const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
-      const header = Array.from(bytes.slice(0, 8));
-      expect(header).toEqual(pngSignature);
+    // Verify PNG signature (first 8 bytes)
+    const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
+    const header = Array.from(bytes.slice(0, 8));
+    expect(header).toEqual(pngSignature);
 
-      console.log(
-        `✅ Image generated: ${bytes.length} bytes, revised_prompt: "${img.revisedPrompt ?? "(none)"}"`,
-      );
-    },
-    120_000,
-  );
+    console.log(
+      `✅ Image generated: ${bytes.length} bytes, revised_prompt: "${img.revisedPrompt ?? "(none)"}"`,
+    );
+  }, 120_000);
 
   it("testConnection succeeds with valid key", async () => {
     const config = {
@@ -86,8 +93,13 @@ describe.skipIf(!RUN_E2E)("e2e: real API generate", () => {
       displayName: "OpenAI",
       apiKey: API_KEY,
       baseUrl: BASE_URL,
-      defaultModel: "gpt-image-1",
-      defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "low", n: 1 },
+      defaultModel: "gpt-image-2",
+      defaultParams: {
+        model: "gpt-image-2",
+        size: "1024x1024",
+        quality: "low",
+        n: 1,
+      },
       connectionStatus: "unknown" as const,
     };
 
@@ -102,8 +114,13 @@ describe.skipIf(!RUN_E2E)("e2e: real API generate", () => {
       displayName: "OpenAI",
       apiKey: "sk-invalid-key",
       baseUrl: BASE_URL,
-      defaultModel: "gpt-image-1",
-      defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "low", n: 1 },
+      defaultModel: "gpt-image-2",
+      defaultParams: {
+        model: "gpt-image-2",
+        size: "1024x1024",
+        quality: "low",
+        n: 1,
+      },
       connectionStatus: "unknown" as const,
     };
 

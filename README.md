@@ -1,6 +1,6 @@
 # SuperImage
 
-AI 驱动的文生图对话平台，基于 GPT-Image-1，采用无损图片管线。
+AI 驱动的文生图对话平台，基于 gpt-image-2，采用无损图片管线。
 
 ## 功能特性
 
@@ -14,16 +14,16 @@ AI 驱动的文生图对话平台，基于 GPT-Image-1，采用无损图片管�
 
 ## 技术栈
 
-| 领域 | 技术选型 |
-|------|---------|
-| 工程架构 | Turborepo + pnpm workspaces (monorepo) |
-| 前端框架 | Next.js 15 (App Router) |
-| 样式方案 | Tailwind CSS 4 |
-| 状态管理 | Zustand (localStorage persist) |
-| 本地存储 | Dexie.js (IndexedDB) — sessions / messages / images |
-| UI 组件 | Radix UI 原语 |
-| 测试 | Vitest + jsdom + fake-indexeddb |
-| AI 接口 | OpenAI Images API (gpt-image-1)，可通过 Provider Registry 扩展 |
+| 领域     | 技术选型                                                       |
+| -------- | -------------------------------------------------------------- |
+| 工程架构 | Turborepo + pnpm workspaces (monorepo)                         |
+| 前端框架 | Next.js 15 (App Router)                                        |
+| 样式方案 | Tailwind CSS 4                                                 |
+| 状态管理 | Zustand (localStorage persist)                                 |
+| 本地存储 | Dexie.js (IndexedDB) — sessions / messages / images            |
+| UI 组件  | Radix UI 原语                                                  |
+| 测试     | Vitest + jsdom + fake-indexeddb                                |
+| AI 接口  | OpenAI Images API (gpt-image-2)，可通过 Provider Registry 扩展 |
 
 ## 项目结构
 
@@ -127,12 +127,12 @@ pnpm type-check   # TypeScript 类型检查
 
 生成失败时会显示对应的错误提示和操作建议：
 
-| 错误类型 | 提示 | 建议操作 |
-|---------|------|---------|
-| 认证失败 | API Key invalid | 打开设置检查 Key |
+| 错误类型 | 提示                     | 建议操作         |
+| -------- | ------------------------ | ---------------- |
+| 认证失败 | API Key invalid          | 打开设置检查 Key |
 | 内容违规 | Content policy violation | 修改 prompt 重试 |
-| 额度不足 | Quota exceeded | 检查账户余额 |
-| 其他错误 | 显示原始错误信息 | 点击重试按钮 |
+| 额度不足 | Quota exceeded           | 检查账户余额     |
+| 其他错误 | 显示原始错误信息         | 点击重试按钮     |
 
 ## 图片管线
 
@@ -153,16 +153,16 @@ URL.createObjectURL(blob) → <img> 展示
 
 ## 快捷键一览
 
-| 快捷键 | 功能 |
-|--------|------|
-| `⌘N` | 新建会话 |
-| `⌘,` | 打开/关闭设置面板 |
-| `⌘K` | 聚焦会话搜索 |
-| `⌘\` | 展开/折叠侧边栏 |
-| `Esc` | 关闭设置面板 / Lightbox |
-| `Enter` | 发送消息 |
-| `Shift+Enter` | 输入框内换行 |
-| `←` `→` | Lightbox 切换图片 |
+| 快捷键        | 功能                    |
+| ------------- | ----------------------- |
+| `⌘N`          | 新建会话                |
+| `⌘,`          | 打开/关闭设置面板       |
+| `⌘K`          | 聚焦会话搜索            |
+| `⌘\`          | 展开/折叠侧边栏         |
+| `Esc`         | 关闭设置面板 / Lightbox |
+| `Enter`       | 发送消息                |
+| `Shift+Enter` | 输入框内换行            |
+| `←` `→`       | Lightbox 切换图片       |
 
 > macOS 使用 `⌘`，Windows/Linux 使用 `Ctrl`。
 
@@ -217,18 +217,21 @@ vercel --yes
 ```jsonc
 {
   "framework": "nextjs",
-  "installCommand": "pnpm install",        // 在 app 目录安装，pnpm 会解析 workspace
-  "buildCommand": "cd ../.. && pnpm turbo build --filter=<app>",  // 回到 monorepo 根目录构建
+  "installCommand": "pnpm install", // 在 app 目录安装，pnpm 会解析 workspace
+  "buildCommand": "cd ../.. && pnpm turbo build --filter=<app>", // 回到 monorepo 根目录构建
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
-      ]
-    }
-  ]
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin",
+        },
+      ],
+    },
+  ],
 }
 ```
 

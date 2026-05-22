@@ -12,6 +12,6 @@ export const PROVIDER_TYPES: ProviderTypeMeta[] = [
     label: "OpenAI",
     icon: "🤖",
     defaultBaseUrl: "https://api.openai.com/v1",
-    defaultModel: "gpt-image-1",
+    defaultModel: "gpt-image-2",
   },
 ];

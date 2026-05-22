@@ -13,8 +13,8 @@ beforeEach(() => {
         displayName: "OpenAI",
         apiKey: "",
         baseUrl: "https://api.openai.com/v1",
-        defaultModel: "gpt-image-1",
-        defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
+        defaultModel: "gpt-image-2",
+        defaultParams: { model: "gpt-image-2", size: "1024x1024", quality: "auto", n: 1 },
         connectionStatus: "unknown",
       },
     },
@@ -34,7 +34,7 @@ describe("settings-panel store interactions", () => {
     const provider = state.providers[state.activeProviderId];
     expect(provider).toBeDefined();
     expect(provider.baseUrl).toContain("openai.com");
-    expect(provider.defaultModel).toBe("gpt-image-1");
+    expect(provider.defaultModel).toBe("gpt-image-2");
     expect(provider.providerType).toBe("openai");
     expect(provider.displayName).toBe("OpenAI");
     expect(provider.connectionStatus).toBe("unknown");
@@ -44,7 +44,7 @@ describe("settings-panel store interactions", () => {
     useSettingsStore.getState().updateProviderField(
       "openai",
       "defaultParams",
-      { model: "gpt-image-1", size: "1536x1024", quality: "high", n: 2 },
+      { model: "gpt-image-2", size: "1536x1024", quality: "high", n: 2 },
     );
     const state = useSettingsStore.getState();
     expect(state.providers.openai.defaultParams.size).toBe("1536x1024");

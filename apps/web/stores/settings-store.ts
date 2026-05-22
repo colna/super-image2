@@ -9,7 +9,7 @@ import { persist } from "zustand/middleware";
 import { PROVIDER_TYPES } from "@/lib/providers/provider-types";
 
 const DEFAULT_PARAMS: GenerateParams = {
-  model: "gpt-image-1",
+  model: "gpt-image-2",
   size: "1024x1024",
   quality: "auto",
   n: 1,
@@ -22,14 +22,16 @@ function makeDefaultProvider(): ProviderConfig {
     displayName: "OpenAI",
     apiKey: "",
     baseUrl: "https://api.openai.com/v1",
-    defaultModel: "gpt-image-1",
+    defaultModel: "gpt-image-2",
     defaultParams: DEFAULT_PARAMS,
     connectionStatus: "unknown",
   };
 }
 
 /** Migrate v1 (no providerType/displayName/connectionStatus) → v2 */
-function migrateV1(persisted: Record<string, unknown>): Record<string, unknown> {
+function migrateV1(
+  persisted: Record<string, unknown>,
+): Record<string, unknown> {
   const providers = persisted.providers as
     | Record<string, Record<string, unknown>>
     | undefined;
@@ -43,7 +45,7 @@ function migrateV1(persisted: Record<string, unknown>): Record<string, unknown> 
       displayName: (p.displayName as string) ?? key,
       apiKey: (p.apiKey as string) ?? "",
       baseUrl: (p.baseUrl as string) ?? "https://api.openai.com/v1",
-      defaultModel: (p.defaultModel as string) ?? "gpt-image-1",
+      defaultModel: (p.defaultModel as string) ?? "gpt-image-2",
       defaultParams: (p.defaultParams as GenerateParams) ?? DEFAULT_PARAMS,
       connectionStatus: (p.connectionStatus as ConnectionStatus) ?? "unknown",
       connectionError: p.connectionError as string | undefined,
@@ -99,7 +101,7 @@ export const useSettingsStore = create<SettingsState>()(
           const { [id]: _, ...rest } = state.providers;
           const nextActive =
             state.activeProviderId === id
-              ? Object.keys(rest)[0] ?? ""
+              ? (Object.keys(rest)[0] ?? "")
               : state.activeProviderId;
           return { providers: rest, activeProviderId: nextActive };
         }),
@@ -127,7 +129,7 @@ export const useSettingsStore = create<SettingsState>()(
           displayName,
           apiKey: "",
           baseUrl: meta?.defaultBaseUrl ?? "https://api.openai.com/v1",
-          defaultModel: meta?.defaultModel ?? "gpt-image-1",
+          defaultModel: meta?.defaultModel ?? "gpt-image-2",
           defaultParams: DEFAULT_PARAMS,
           connectionStatus: "unknown",
         };
@@ -158,7 +160,9 @@ export const useSettingsStore = create<SettingsState>()(
       version: 2,
       migrate: (persisted, version) => {
         if (version < 2) {
-          return migrateV1(persisted as Record<string, unknown>) as unknown as SettingsState;
+          return migrateV1(
+            persisted as Record<string, unknown>,
+          ) as unknown as SettingsState;
         }
         return persisted as unknown as SettingsState;
       },

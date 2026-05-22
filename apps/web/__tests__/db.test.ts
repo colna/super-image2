@@ -26,7 +26,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     providerId: "openai",
-    modelId: "gpt-image-1",
+    modelId: "gpt-image-2",
     ...overrides,
   };
 }

@@ -24,7 +24,7 @@ export default function ChatPage() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         providerId: activeProviderId,
-        modelId: config?.defaultModel ?? "gpt-image-1",
+        modelId: config?.defaultModel ?? "gpt-image-2",
       });
 
       sessionStorage.setItem(

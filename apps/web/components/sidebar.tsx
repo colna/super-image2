@@ -53,7 +53,7 @@ export function Sidebar() {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       providerId: "openai",
-      modelId: "gpt-image-1",
+      modelId: "gpt-image-2",
     };
     await createSession(session);
     router.push(`/chat/${id}`);
@@ -127,11 +127,10 @@ export function Sidebar() {
           filteredSessions.map((session) => (
             <div
               key={session.id}
-              className={`group relative mb-0.5 flex items-center rounded-card px-3 py-2 cursor-pointer transition-colors ${
-                activeSessionId === session.id
+              className={`group relative mb-0.5 flex items-center rounded-card px-3 py-2 cursor-pointer transition-colors ${activeSessionId === session.id
                   ? "bg-background-hover border-l-2 border-foreground"
                   : "hover:bg-background-hover"
-              }`}
+                }`}
               onClick={() => handleSelectSession(session.id)}
             >
               <div className="flex-1 min-w-0">

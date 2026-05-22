@@ -23,7 +23,7 @@ export function ChatLayout({ children }: { children: ReactNode }) {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       providerId: "openai",
-      modelId: "gpt-image-1",
+      modelId: "gpt-image-2",
     };
     await createSession(session);
     router.push(`/chat/${id}`);

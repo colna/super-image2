@@ -55,7 +55,7 @@ describe("POST /api/generate", () => {
         prompt: "a cat",
         apiKey: "sk-test",
         baseUrl: "https://api.example.com/v1",
-        model: "gpt-image-1",
+        model: "gpt-image-2",
         size: "1024x1024",
         quality: "auto",
         n: 1,
@@ -77,10 +77,7 @@ describe("POST /api/test-connection", () => {
   });
 
   it("returns ok: true on success", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({ ok: true }),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
     const res = await testConnectionPost(
       makeRequest({
         providerId: "openai",

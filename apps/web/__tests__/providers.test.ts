@@ -1,20 +1,23 @@
 import { describe, it, expect, vi } from "vitest";
 
-import {
-  getAllProviders,
-  getProvider,
-  openaiProvider,
-} from "../lib/providers";
+import { getAllProviders, getProvider, openaiProvider } from "../lib/providers";
 
-function makeConfig(overrides: Partial<{ apiKey: string; baseUrl: string }> = {}) {
+function makeConfig(
+  overrides: Partial<{ apiKey: string; baseUrl: string }> = {},
+) {
   return {
     id: "openai",
     providerType: "openai",
     displayName: "OpenAI",
     apiKey: overrides.apiKey ?? "sk-test",
     baseUrl: overrides.baseUrl ?? "https://api.example.com/v1",
-    defaultModel: "gpt-image-1",
-    defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
+    defaultModel: "gpt-image-2",
+    defaultParams: {
+      model: "gpt-image-2",
+      size: "1024x1024",
+      quality: "auto",
+      n: 1,
+    },
     connectionStatus: "unknown" as const,
   };
 }
@@ -70,7 +73,7 @@ describe("openai provider", () => {
 
     const result = await openaiProvider.generate(
       "a cat",
-      { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
+      { model: "gpt-image-2", size: "1024x1024", quality: "auto", n: 1 },
       makeConfig(),
     );
 
@@ -99,7 +102,7 @@ describe("openai provider", () => {
     await expect(
       openaiProvider.generate(
         "a cat",
-        { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
+        { model: "gpt-image-2", size: "1024x1024", quality: "auto", n: 1 },
         makeConfig({ apiKey: "bad-key" }),
       ),
     ).rejects.toThrow("Invalid API key");

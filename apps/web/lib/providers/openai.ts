@@ -34,9 +34,12 @@ async function callOpenAI(
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: { message: res.statusText } }));
+    const error = await res
+      .json()
+      .catch(() => ({ error: { message: res.statusText } }));
     throw new Error(
-      (error as { error?: { message?: string } }).error?.message ?? `API error: ${res.status}`,
+      (error as { error?: { message?: string } }).error?.message ??
+        `API error: ${res.status}`,
     );
   }
 
@@ -57,8 +60,8 @@ export const openaiProvider: ImageProvider = {
   id: "openai",
   name: "OpenAI",
   icon: "🤖",
-  models: [{ id: "gpt-image-1", name: "GPT Image 1" }],
-  defaultModel: "gpt-image-1",
+  models: [{ id: "gpt-image-2", name: "GPT Image 2" }],
+  defaultModel: "gpt-image-2",
   supportedSizes: ["1024x1024", "1024x1536", "1536x1024", "auto"],
   supportedQualities: ["auto", "low", "medium", "high"],
   maxN: 4,
@@ -101,7 +104,12 @@ export const openaiProvider: ImageProvider = {
     formData.append("n", String(options.n));
     formData.append("response_format", "b64_json");
 
-    const response = await callOpenAI("/images/edits", formData, config, signal);
+    const response = await callOpenAI(
+      "/images/edits",
+      formData,
+      config,
+      signal,
+    );
     return toGenerateResult(response);
   },
 

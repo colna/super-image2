@@ -17,9 +17,9 @@ describe("settings-store", () => {
           displayName: "OpenAI",
           apiKey: "",
           baseUrl: "https://api.openai.com/v1",
-          defaultModel: "gpt-image-1",
+          defaultModel: "gpt-image-2",
           defaultParams: {
-            model: "gpt-image-1",
+            model: "gpt-image-2",
             size: "1024x1024",
             quality: "auto",
             n: 1,
@@ -52,7 +52,12 @@ describe("settings-store", () => {
       apiKey: "key",
       baseUrl: "https://example.com",
       defaultModel: "model-1",
-      defaultParams: { model: "model-1", size: "512x512", quality: "auto", n: 1 },
+      defaultParams: {
+        model: "model-1",
+        size: "512x512",
+        quality: "auto",
+        n: 1,
+      },
       connectionStatus: "unknown",
     });
     const state = useSettingsStore.getState();
@@ -73,8 +78,13 @@ describe("settings-store", () => {
       displayName: "Second",
       apiKey: "",
       baseUrl: "https://api.openai.com/v1",
-      defaultModel: "gpt-image-1",
-      defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
+      defaultModel: "gpt-image-2",
+      defaultParams: {
+        model: "gpt-image-2",
+        size: "1024x1024",
+        quality: "auto",
+        n: 1,
+      },
       connectionStatus: "unknown",
     });
     useSettingsStore.getState().removeProvider("openai");
@@ -83,7 +93,9 @@ describe("settings-store", () => {
   });
 
   it("updateProviderField updates a single field", () => {
-    useSettingsStore.getState().updateProviderField("openai", "apiKey", "sk-test");
+    useSettingsStore
+      .getState()
+      .updateProviderField("openai", "apiKey", "sk-test");
     const state = useSettingsStore.getState();
     expect(state.providers.openai.apiKey).toBe("sk-test");
   });
@@ -100,9 +112,13 @@ describe("settings-store", () => {
 
   it("updateConnectionStatus sets status and error", () => {
     useSettingsStore.getState().updateConnectionStatus("openai", "connected");
-    expect(useSettingsStore.getState().providers.openai.connectionStatus).toBe("connected");
+    expect(useSettingsStore.getState().providers.openai.connectionStatus).toBe(
+      "connected",
+    );
 
-    useSettingsStore.getState().updateConnectionStatus("openai", "error", "Bad key");
+    useSettingsStore
+      .getState()
+      .updateConnectionStatus("openai", "error", "Bad key");
     const provider = useSettingsStore.getState().providers.openai;
     expect(provider.connectionStatus).toBe("error");
     expect(provider.connectionError).toBe("Bad key");

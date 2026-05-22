@@ -12,8 +12,13 @@ function makeProviderConfig(overrides: Partial<{ apiKey: string }> = {}) {
     displayName: "OpenAI",
     apiKey: overrides.apiKey ?? "sk-test",
     baseUrl: "https://api.example.com/v1",
-    defaultModel: "gpt-image-1",
-    defaultParams: { model: "gpt-image-1", size: "1024x1024", quality: "auto", n: 1 },
+    defaultModel: "gpt-image-2",
+    defaultParams: {
+      model: "gpt-image-2",
+      size: "1024x1024",
+      quality: "auto",
+      n: 1,
+    },
     connectionStatus: "unknown" as const,
   };
 }
@@ -44,7 +49,7 @@ describe("sendGenerate", () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       providerId: "openai",
-      modelId: "gpt-image-1",
+      modelId: "gpt-image-2",
     });
 
     const fakeB64 = btoa("fake-png-data");
@@ -54,9 +59,7 @@ describe("sendGenerate", () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            data: [
-              { b64_json: fakeB64, revised_prompt: "A revised prompt" },
-            ],
+            data: [{ b64_json: fakeB64, revised_prompt: "A revised prompt" }],
           }),
       }),
     );
@@ -98,7 +101,7 @@ describe("sendGenerate", () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       providerId: "openai",
-      modelId: "gpt-image-1",
+      modelId: "gpt-image-2",
     });
 
     vi.stubGlobal(
@@ -136,25 +139,30 @@ describe("sendGenerate", () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       providerId: "openai",
-      modelId: "gpt-image-1",
+      modelId: "gpt-image-2",
     });
 
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockImplementation((_url: string, opts: RequestInit) =>
-        new Promise((_resolve, reject) => {
-          opts.signal?.addEventListener("abort", () =>
-            reject(Object.assign(new Error("aborted"), { name: "AbortError" })),
-          );
-        }),
+      vi.fn().mockImplementation(
+        (_url: string, opts: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            opts.signal?.addEventListener("abort", () =>
+              reject(
+                Object.assign(new Error("aborted"), { name: "AbortError" }),
+              ),
+            );
+          }),
       ),
     );
 
-    const generatePromise = useChatStore.getState().sendGenerate(sessionId, "a bird", {
-      size: "1024x1024",
-      quality: "auto",
-      n: 1,
-    });
+    const generatePromise = useChatStore
+      .getState()
+      .sendGenerate(sessionId, "a bird", {
+        size: "1024x1024",
+        quality: "auto",
+        n: 1,
+      });
 
     await new Promise((r) => setTimeout(r, 10));
     useChatStore.getState().cancelGeneration();
