@@ -1,6 +1,6 @@
 "use client";
 
-import { CloseOutlined, PaperClipOutlined, SendOutlined } from "@ant-design/icons";
+import { CloseOutlined, FileOutlined, PaperClipOutlined, SendOutlined } from "@ant-design/icons";
 import { Button, Select, Space } from "antd";
 import { useCallback, useMemo, useRef, useState } from "react";
 
@@ -17,7 +17,6 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
-const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp,image/gif";
 const MAX_FILES = 5;
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
@@ -41,7 +40,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   }, []);
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
-    const arr = Array.from(newFiles).filter((f) => f.type.startsWith("image/"));
+    const arr = Array.from(newFiles);
     setFiles((prev) => {
       const combined = [...prev, ...arr];
       return combined.slice(0, MAX_FILES);
@@ -53,7 +52,11 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   }, []);
 
   const previews = useMemo(
-    () => files.map((f) => ({ name: f.name, url: URL.createObjectURL(f) })),
+    () => files.map((f) => ({
+      name: f.name,
+      isImage: f.type.startsWith("image/"),
+      url: f.type.startsWith("image/") ? URL.createObjectURL(f) : "",
+    })),
     [files],
   );
 
@@ -103,15 +106,15 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
       const items = e.clipboardData.items;
-      const imageFiles: File[] = [];
+      const pastedFiles: File[] = [];
       for (let i = 0; i < items.length; i++) {
-        if (items[i].type.startsWith("image/")) {
+        if (items[i].kind === "file") {
           const file = items[i].getAsFile();
-          if (file) imageFiles.push(file);
+          if (file) pastedFiles.push(file);
         }
       }
-      if (imageFiles.length > 0) {
-        addFiles(imageFiles);
+      if (pastedFiles.length > 0) {
+        addFiles(pastedFiles);
       }
     },
     [addFiles],
@@ -185,7 +188,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
           {previews.map((p, i) => (
             <div
-              key={p.url}
+              key={`${p.name}-${i}`}
               style={{
                 position: "relative",
                 width: 64,
@@ -193,14 +196,27 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                 borderRadius: 8,
                 overflow: "hidden",
                 border: "1px solid #e8e8e8",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: p.isImage ? undefined : "#f5f5f5",
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={p.url}
-                alt={p.name}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
+              {p.isImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={p.url}
+                  alt={p.name}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <div style={{ textAlign: "center", padding: 4 }}>
+                  <FileOutlined style={{ fontSize: 20, color: "#888" }} />
+                  <div style={{ fontSize: 9, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 56 }}>
+                    {p.name.split(".").pop()}
+                  </div>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => removeFile(i)}
@@ -255,7 +271,6 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept={ACCEPTED_TYPES}
           multiple
           style={{ display: "none" }}
           onChange={(e) => {

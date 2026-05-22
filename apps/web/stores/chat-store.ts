@@ -279,19 +279,22 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     const config = settings.providers[settings.activeProviderId];
     const provider = getProvider(config?.providerType ?? settings.activeProviderId);
 
-    if (!config || !provider || !provider.generateWithRefs) return;
+    if (!config || !provider) return;
 
     // 1. Build attachments metadata + convert files to base64 data URLs
     const userMsgId = crypto.randomUUID();
     const attachments: Attachment[] = [];
     const referenceImages: ImageInput[] = [];
 
+    const textContents: string[] = [];
+
     for (const file of attachmentFiles) {
       const id = crypto.randomUUID();
+      const isImage = file.type.startsWith("image/");
       attachments.push({
         id,
         name: file.name,
-        type: file.type.startsWith("image/") ? "image" : "file",
+        type: isImage ? "image" : "file",
         mimeType: file.type,
         size: file.size,
       });
@@ -299,10 +302,14 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       // Save to attachmentStore
       await saveAttachment(id, file, userMsgId, file.name, file.type);
 
-      // Convert image files to base64 data URL for API
-      if (file.type.startsWith("image/")) {
+      if (isImage) {
+        // Convert image files to base64 data URL for API
         const base64 = await fileToBase64DataUrl(file);
         referenceImages.push({ base64DataUrl: base64 });
+      } else if (isTextFile(file)) {
+        // Read text-based files and append content to prompt
+        const text = await file.text();
+        textContents.push(`[${file.name}]\n${text}`);
       }
     }
 
@@ -334,19 +341,21 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     };
     await addMessage(aiMsg);
 
-    // 4. Call provider.generateWithRefs
+    // 4. Build enriched prompt (append text file contents)
+    const enrichedPrompt = textContents.length > 0
+      ? `${prompt}\n\n---\n${textContents.join("\n\n")}`
+      : prompt;
+
+    // 5. Call provider: images → generateWithRefs, text-only → generate
     const controller = new AbortController();
     setAbortController(controller);
     setGenerating(true);
 
     try {
-      const result = await provider.generateWithRefs(
-        prompt,
-        referenceImages,
-        { model: config.defaultModel, ...params },
-        config,
-        controller.signal,
-      );
+      const opts = { model: config.defaultModel, ...params };
+      const result = referenceImages.length > 0 && provider.generateWithRefs
+        ? await provider.generateWithRefs(enrichedPrompt, referenceImages, opts, config, controller.signal)
+        : await provider.generate(enrichedPrompt, opts, config, controller.signal);
 
       // 5. Decode base64 → Blob → save to IndexedDB
       const images: ImageResult[] = [];
@@ -393,4 +402,16 @@ function fileToBase64DataUrl(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+const TEXT_EXTENSIONS = new Set([
+  "txt", "md", "json", "csv", "xml", "html", "css", "js", "ts", "tsx",
+  "jsx", "yaml", "yml", "toml", "ini", "cfg", "log", "svg", "py", "sh",
+]);
+
+function isTextFile(file: File): boolean {
+  if (file.type.startsWith("text/")) return true;
+  if (file.type === "application/json" || file.type === "application/xml") return true;
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  return TEXT_EXTENSIONS.has(ext);
 }
