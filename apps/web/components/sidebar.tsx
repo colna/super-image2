@@ -59,10 +59,11 @@ export function Sidebar() {
 
   const handleSelectSession = useCallback(
     (id: string) => {
+      if (id === activeSessionId) return;
       setActiveSessionId(id);
-      router.replace(`/chat/${id}`);
+      router.push(`/chat/${id}`, { scroll: false });
     },
-    [setActiveSessionId, router],
+    [activeSessionId, setActiveSessionId, router],
   );
 
   const handleDeleteSession = useCallback(

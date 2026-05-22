@@ -52,7 +52,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   abortController: null,
 
   loadMessages: async (sessionId) => {
-    set({ loading: true });
+    set({ messages: [], loading: true });
     const messages = await getMessagesBySession(sessionId);
     set({ messages, loading: false });
   },
