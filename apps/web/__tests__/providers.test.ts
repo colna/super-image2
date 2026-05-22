@@ -109,17 +109,14 @@ describe("openai provider", () => {
     ).rejects.toThrow("Invalid API key");
   });
 
-  it("generateWithRefs calls /responses with correct input structure", async () => {
+  it("generateWithRefs calls /images/edits with reference image as FormData", async () => {
     const mockResponse = {
-      output: [
+      data: [
         {
-          type: "image_generation_call",
-          result: "base64imagedata",
+          b64_json: "base64imagedata",
           revised_prompt: "A red square",
         },
       ],
-      model: "gpt-image-2",
-      status: "completed",
     };
 
     const fetchSpy = vi.fn().mockResolvedValue({
@@ -128,41 +125,37 @@ describe("openai provider", () => {
     });
     globalThis.fetch = fetchSpy;
 
+    // Use a tiny valid base64 string
+    const b64 = btoa("fakepng");
     const result = await openaiProvider.generateWithRefs!(
       "a red square",
-      [{ base64DataUrl: "data:image/png;base64,abc123" }],
+      [{ base64DataUrl: `data:image/png;base64,${b64}` }],
       { model: "gpt-image-2", size: "1024x1024", quality: "low", n: 1 },
       makeConfig(),
     );
 
     expect(fetchSpy).toHaveBeenCalledOnce();
     const [url, opts] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.example.com/v1/responses");
+    expect(url).toBe("https://api.example.com/v1/images/edits");
     expect(opts.method).toBe("POST");
 
-    const body = JSON.parse(opts.body as string);
-    // Should have input_image + input_text
-    expect(body.input).toHaveLength(2);
-    expect(body.input[0].type).toBe("input_image");
-    expect(body.input[0].image_url).toBe("data:image/png;base64,abc123");
-    expect(body.input[1].type).toBe("input_text");
-    expect(body.input[1].text).toBe("a red square");
-    // Should have image_generation tool
-    expect(body.tools).toHaveLength(1);
-    expect(body.tools[0].type).toBe("image_generation");
-    expect(body.tools[0].size).toBe("1024x1024");
-    expect(body.tools[0].quality).toBe("low");
+    // Body should be FormData
+    const body = opts.body as FormData;
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("prompt")).toBe("a red square");
+    expect(body.get("model")).toBe("gpt-image-2");
+    expect(body.get("quality")).toBe("low");
+    expect(body.get("response_format")).toBe("b64_json");
+    expect(body.get("image")).toBeInstanceOf(Blob);
 
     expect(result.images).toHaveLength(1);
     expect(result.images[0].b64Json).toBe("base64imagedata");
     expect(result.images[0].revisedPrompt).toBe("A red square");
   });
 
-  it("generateWithRefs supports multiple reference images", async () => {
+  it("generateWithRefs uses first image when multiple provided", async () => {
     const mockResponse = {
-      output: [
-        { type: "image_generation_call", result: "img1data" },
-      ],
+      data: [{ b64_json: "img1data" }],
     };
 
     const fetchSpy = vi.fn().mockResolvedValue({
@@ -171,38 +164,34 @@ describe("openai provider", () => {
     });
     globalThis.fetch = fetchSpy;
 
+    const b64a = btoa("imgA");
+    const b64b = btoa("imgB");
     await openaiProvider.generateWithRefs!(
       "merge these",
       [
-        { base64DataUrl: "data:image/png;base64,aaa" },
-        { base64DataUrl: "data:image/png;base64,bbb" },
+        { base64DataUrl: `data:image/png;base64,${b64a}` },
+        { base64DataUrl: `data:image/png;base64,${b64b}` },
       ],
       { model: "gpt-image-2", size: "1024x1024", quality: "auto", n: 1 },
       makeConfig(),
     );
 
-    const body = JSON.parse((fetchSpy.mock.calls[0] as [string, RequestInit])[1].body as string);
-    expect(body.input).toHaveLength(3); // 2 images + 1 text
-    expect(body.input[0].image_url).toBe("data:image/png;base64,aaa");
-    expect(body.input[1].image_url).toBe("data:image/png;base64,bbb");
-    expect(body.input[2].type).toBe("input_text");
+    const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.example.com/v1/images/edits");
+    // Uses /images/edits with the first reference image
+    const body = (fetchSpy.mock.calls[0] as [string, RequestInit])[1].body as FormData;
+    expect(body.get("image")).toBeInstanceOf(Blob);
   });
 
-  it("generateWithRefs throws when no images in output", async () => {
-    const fetchSpy = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ output: [{ type: "text", text: "I cannot generate that" }] }),
-    });
-    globalThis.fetch = fetchSpy;
-
+  it("generateWithRefs throws when no reference images", async () => {
     await expect(
       openaiProvider.generateWithRefs!(
         "something",
-        [{ base64DataUrl: "data:image/png;base64,abc" }],
+        [],
         { model: "gpt-image-2", size: "1024x1024", quality: "auto", n: 1 },
         makeConfig(),
       ),
-    ).rejects.toThrow("No images generated from Responses API");
+    ).rejects.toThrow("No reference images provided");
   });
 
   it("testConnection returns true on success", async () => {

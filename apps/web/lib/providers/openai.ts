@@ -121,69 +121,34 @@ export const openaiProvider: ImageProvider = {
     config: ProviderConfig,
     signal?: AbortSignal,
   ): Promise<GenerateResult> {
-    // Build input array: reference images + text prompt
-    const input: Record<string, unknown>[] = [];
-    for (const ref of referenceImages) {
-      input.push({
-        type: "input_image",
-        image_url: ref.base64DataUrl,
-      });
+    // Use /images/edits with the first reference image as source
+    const ref = referenceImages[0];
+    if (!ref) {
+      throw new Error("No reference images provided");
     }
-    input.push({ type: "input_text", text: prompt });
 
-    const body = {
-      model: options.model,
-      input,
-      tools: [
-        {
-          type: "image_generation",
-          size: options.size,
-          quality: options.quality,
-        },
-      ],
-    };
+    // Convert base64 data URL → Blob
+    const [header, b64] = ref.base64DataUrl.split(",");
+    const mime = header.match(/:(.*?);/)?.[1] ?? "image/png";
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: mime });
 
-    const res = await fetch(`${config.baseUrl}/responses`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+    const formData = new FormData();
+    formData.append("model", options.model);
+    formData.append("prompt", prompt);
+    formData.append("image", blob, "reference.png");
+    formData.append("size", options.size);
+    formData.append("quality", options.quality);
+    formData.append("n", String(options.n));
+    formData.append("response_format", "b64_json");
+
+    const response = await callOpenAI(
+      "/images/edits",
+      formData,
+      config,
       signal,
-    });
-
-    if (!res.ok) {
-      const error = await res
-        .json()
-        .catch(() => ({ error: { message: res.statusText } }));
-      throw new Error(
-        (error as { error?: { message?: string } }).error?.message ??
-          `API error: ${res.status}`,
-      );
-    }
-
-    const data = await res.json() as {
-      output: { type: string; result?: string; revised_prompt?: string }[];
-    };
-
-    // Extract image_generation_call results from output
-    const images: GenerateResult["images"] = [];
-    for (const item of data.output) {
-      if (item.type === "image_generation_call" && item.result) {
-        images.push({
-          id: `img-${Date.now()}-${images.length}`,
-          b64Json: item.result,
-          revisedPrompt: item.revised_prompt,
-        });
-      }
-    }
-
-    if (images.length === 0) {
-      throw new Error("No images generated from Responses API");
-    }
-
-    return { images };
+    );
+    return toGenerateResult(response);
   },
 
   async testConnection(config: ProviderConfig): Promise<boolean> {
