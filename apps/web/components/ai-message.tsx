@@ -47,6 +47,7 @@ export function AIMessage({ message, onRetry, onCancel, onEdit }: AIMessageProps
                 display: "grid",
                 gap: 8,
                 gridTemplateColumns: message.images.length > 1 ? "1fr 1fr" : "1fr",
+                maxWidth: message.images.length > 1 ? 520 : 360,
               }}
             >
               {message.images.map((img, idx) => (

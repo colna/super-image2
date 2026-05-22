@@ -52,7 +52,7 @@ export function ImageCard({ image, onClick, onEdit }: ImageCardProps) {
   }, [image.id]);
 
   return (
-    <div className="image-card-wrap" style={{ position: "relative", overflow: "hidden", borderRadius: 8 }}>
+    <div className="image-card-wrap" style={{ position: "relative", overflow: "hidden", borderRadius: 8, maxWidth: 360 }}>
       {blobUrl ? (
         /* eslint-disable-next-line @next/next/no-img-element -- blob URL */
         <img
