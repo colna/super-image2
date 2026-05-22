@@ -16,7 +16,7 @@ interface ChatAreaProps {
 }
 
 export function ChatArea({ sessionId }: ChatAreaProps) {
-  const { messages, generating, loadMessages, sendGenerate, sendEdit, cancelGeneration } =
+  const { messages, generating, loadMessages, sendGenerate, sendEdit, sendGenerateWithRefs, cancelGeneration } =
     useChatStore();
   const { getSession, createSession, updateSession } = useSessionStore();
   const router = useRouter();
@@ -42,9 +42,11 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   }, [sessionId, loadMessages, sendGenerate]);
 
   const handleSend = useCallback(
-    async (prompt: string, params: { size: string; quality: string; n: number }) => {
+    async (prompt: string, params: { size: string; quality: string; n: number }, attachments?: File[]) => {
       if (isEditSession && sourceImageId) {
         await sendEdit(sessionId, prompt, sourceImageId, params);
+      } else if (attachments && attachments.length > 0) {
+        await sendGenerateWithRefs(sessionId, prompt, attachments, params);
       } else {
         await sendGenerate(sessionId, prompt, params);
       }
@@ -59,7 +61,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
         await updateSession(sessionId, { updatedAt: Date.now() });
       }
     },
-    [sessionId, isEditSession, sourceImageId, sendGenerate, sendEdit, updateSession],
+    [sessionId, isEditSession, sourceImageId, sendGenerate, sendEdit, sendGenerateWithRefs, updateSession],
   );
 
   const handleRetry = useCallback(

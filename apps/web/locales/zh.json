@@ -18,7 +18,7 @@
   "sidebar.timeHours": "{count}小时前",
   "sidebar.timeDays": "{count}天前",
 
-  "chat.placeholder": "描述你想创建的图片...",
+  "chat.placeholder": "描述你想创建的图片...（📎 附加参考图片）",
   "chat.placeholderGenerating": "生成中...",
   "chat.size": "尺寸",
   "chat.quality": "质量",
@@ -85,5 +85,7 @@
   "guide.tip2": "将质量调为 high 可获得更好的效果（消耗更多 token）。",
   "guide.tip3": "快捷键：⌘N 新建对话，⌘K 搜索，⌘, 打开设置。",
   "guide.noMemory": "每次生成请求都是独立的——AI 不会记住同一会话中的历史消息。",
+  "guide.step4Title": "4. 引用图片",
+  "guide.step4Desc": "点击 📎 按钮或拖拽图片到输入框，AI 会参考这些图片来生成新图片。",
   "guide.close": "知道了"
 }

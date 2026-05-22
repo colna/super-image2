@@ -49,9 +49,10 @@ describe("openai provider", () => {
     expect(openaiProvider.supportedQualities).toContain("auto");
   });
 
-  it("has generate and edit methods", () => {
+  it("has generate, edit, and generateWithRefs methods", () => {
     expect(typeof openaiProvider.generate).toBe("function");
     expect(typeof openaiProvider.edit).toBe("function");
+    expect(typeof openaiProvider.generateWithRefs).toBe("function");
     expect(typeof openaiProvider.testConnection).toBe("function");
   });
 
@@ -106,6 +107,102 @@ describe("openai provider", () => {
         makeConfig({ apiKey: "bad-key" }),
       ),
     ).rejects.toThrow("Invalid API key");
+  });
+
+  it("generateWithRefs calls /responses with correct input structure", async () => {
+    const mockResponse = {
+      output: [
+        {
+          type: "image_generation_call",
+          result: "base64imagedata",
+          revised_prompt: "A red square",
+        },
+      ],
+      model: "gpt-image-2",
+      status: "completed",
+    };
+
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockResponse),
+    });
+    globalThis.fetch = fetchSpy;
+
+    const result = await openaiProvider.generateWithRefs!(
+      "a red square",
+      [{ base64DataUrl: "data:image/png;base64,abc123" }],
+      { model: "gpt-image-2", size: "1024x1024", quality: "low", n: 1 },
+      makeConfig(),
+    );
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const [url, opts] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.example.com/v1/responses");
+    expect(opts.method).toBe("POST");
+
+    const body = JSON.parse(opts.body as string);
+    // Should have input_image + input_text
+    expect(body.input).toHaveLength(2);
+    expect(body.input[0].type).toBe("input_image");
+    expect(body.input[0].image_url).toBe("data:image/png;base64,abc123");
+    expect(body.input[1].type).toBe("input_text");
+    expect(body.input[1].text).toBe("a red square");
+    // Should have image_generation tool
+    expect(body.tools).toHaveLength(1);
+    expect(body.tools[0].type).toBe("image_generation");
+    expect(body.tools[0].size).toBe("1024x1024");
+    expect(body.tools[0].quality).toBe("low");
+
+    expect(result.images).toHaveLength(1);
+    expect(result.images[0].b64Json).toBe("base64imagedata");
+    expect(result.images[0].revisedPrompt).toBe("A red square");
+  });
+
+  it("generateWithRefs supports multiple reference images", async () => {
+    const mockResponse = {
+      output: [
+        { type: "image_generation_call", result: "img1data" },
+      ],
+    };
+
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockResponse),
+    });
+    globalThis.fetch = fetchSpy;
+
+    await openaiProvider.generateWithRefs!(
+      "merge these",
+      [
+        { base64DataUrl: "data:image/png;base64,aaa" },
+        { base64DataUrl: "data:image/png;base64,bbb" },
+      ],
+      { model: "gpt-image-2", size: "1024x1024", quality: "auto", n: 1 },
+      makeConfig(),
+    );
+
+    const body = JSON.parse((fetchSpy.mock.calls[0] as [string, RequestInit])[1].body as string);
+    expect(body.input).toHaveLength(3); // 2 images + 1 text
+    expect(body.input[0].image_url).toBe("data:image/png;base64,aaa");
+    expect(body.input[1].image_url).toBe("data:image/png;base64,bbb");
+    expect(body.input[2].type).toBe("input_text");
+  });
+
+  it("generateWithRefs throws when no images in output", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ output: [{ type: "text", text: "I cannot generate that" }] }),
+    });
+    globalThis.fetch = fetchSpy;
+
+    await expect(
+      openaiProvider.generateWithRefs!(
+        "something",
+        [{ base64DataUrl: "data:image/png;base64,abc" }],
+        { model: "gpt-image-2", size: "1024x1024", quality: "auto", n: 1 },
+        makeConfig(),
+      ),
+    ).rejects.toThrow("No images generated from Responses API");
   });
 
   it("testConnection returns true on success", async () => {

@@ -1,6 +1,7 @@
 import type {
   GenerateOptions,
   GenerateResult,
+  ImageInput,
   ImageProvider,
   ProviderConfig,
 } from "@super-image/utils";
@@ -111,6 +112,78 @@ export const openaiProvider: ImageProvider = {
       signal,
     );
     return toGenerateResult(response);
+  },
+
+  async generateWithRefs(
+    prompt: string,
+    referenceImages: ImageInput[],
+    options: GenerateOptions,
+    config: ProviderConfig,
+    signal?: AbortSignal,
+  ): Promise<GenerateResult> {
+    // Build input array: reference images + text prompt
+    const input: Record<string, unknown>[] = [];
+    for (const ref of referenceImages) {
+      input.push({
+        type: "input_image",
+        image_url: ref.base64DataUrl,
+      });
+    }
+    input.push({ type: "input_text", text: prompt });
+
+    const body = {
+      model: options.model,
+      input,
+      tools: [
+        {
+          type: "image_generation",
+          size: options.size,
+          quality: options.quality,
+        },
+      ],
+    };
+
+    const res = await fetch(`${config.baseUrl}/responses`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+
+    if (!res.ok) {
+      const error = await res
+        .json()
+        .catch(() => ({ error: { message: res.statusText } }));
+      throw new Error(
+        (error as { error?: { message?: string } }).error?.message ??
+          `API error: ${res.status}`,
+      );
+    }
+
+    const data = await res.json() as {
+      output: { type: string; result?: string; revised_prompt?: string }[];
+    };
+
+    // Extract image_generation_call results from output
+    const images: GenerateResult["images"] = [];
+    for (const item of data.output) {
+      if (item.type === "image_generation_call" && item.result) {
+        images.push({
+          id: `img-${Date.now()}-${images.length}`,
+          b64Json: item.result,
+          revisedPrompt: item.revised_prompt,
+        });
+      }
+    }
+
+    if (images.length === 0) {
+      throw new Error("No images generated from Responses API");
+    }
+
+    return { images };
   },
 
   async testConnection(config: ProviderConfig): Promise<boolean> {

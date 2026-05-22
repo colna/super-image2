@@ -25,9 +25,23 @@ export interface Message {
   content: string;
   images?: ImageResult[];
   sourceImage?: string;
+  attachments?: Attachment[];
   params?: GenerateParams;
   createdAt: number;
   status: MessageStatus;
+}
+
+// ---- Attachment ----
+export interface Attachment {
+  id: string;
+  name: string;
+  type: "image" | "file";
+  mimeType: string;
+  size: number;
+}
+
+export interface ImageInput {
+  base64DataUrl: string; // "data:image/png;base64,..."
 }
 
 // ---- Image ----
@@ -95,6 +109,13 @@ export interface ImageProvider {
   edit?(
     prompt: string,
     image: Blob,
+    options: GenerateOptions,
+    config: ProviderConfig,
+    signal?: AbortSignal,
+  ): Promise<GenerateResult>;
+  generateWithRefs?(
+    prompt: string,
+    referenceImages: ImageInput[],
     options: GenerateOptions,
     config: ProviderConfig,
     signal?: AbortSignal,

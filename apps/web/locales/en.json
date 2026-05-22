@@ -18,7 +18,7 @@
   "sidebar.timeHours": "{count}h ago",
   "sidebar.timeDays": "{count}d ago",
 
-  "chat.placeholder": "Describe the image you want to create...",
+  "chat.placeholder": "Describe the image you want to create... (📎 to attach reference images)",
   "chat.placeholderGenerating": "Generating...",
   "chat.size": "Size",
   "chat.quality": "Quality",
@@ -85,5 +85,7 @@
   "guide.tip2": "Adjust quality to \"high\" for better results (costs more tokens).",
   "guide.tip3": "Use keyboard shortcuts: ⌘N for new chat, ⌘K for search, ⌘, for settings.",
   "guide.noMemory": "Each generation request is independent — the AI does not remember previous messages in the same session.",
+  "guide.step4Title": "4. Reference Images",
+  "guide.step4Desc": "Click the 📎 button or drag & drop images to attach references. The AI will use them as inspiration for generation.",
   "guide.close": "Got it"
 }

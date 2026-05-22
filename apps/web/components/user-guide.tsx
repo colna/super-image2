@@ -44,6 +44,12 @@ export function UserGuide() {
             {t("guide.step3Desc")}
           </Paragraph>
         </div>
+        <div>
+          <Text strong>{t("guide.step4Title")}</Text>
+          <Paragraph type="secondary" style={{ marginTop: 4, marginBottom: 0 }}>
+            {t("guide.step4Desc")}
+          </Paragraph>
+        </div>
       </div>
 
       <Title level={5} style={{ marginTop: 24 }}>{t("guide.tipsTitle")}</Title>

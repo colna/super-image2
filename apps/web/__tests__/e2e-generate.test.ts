@@ -107,6 +107,50 @@ describe.skipIf(!RUN_E2E)("e2e: real API generate", () => {
     expect(ok).toBe(true);
   });
 
+  it("generateWithRefs generates image with reference image", async () => {
+    if (!openaiProvider.generateWithRefs) {
+      throw new Error("generateWithRefs not implemented");
+    }
+
+    // 1x1 red pixel PNG as minimal reference image
+    const TINY_PNG_B64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+    const refDataUrl = `data:image/png;base64,${TINY_PNG_B64}`;
+
+    for (let attempt = 0; attempt <= 3; attempt++) {
+      try {
+        const result = await openaiProvider.generateWithRefs(
+          "make this image larger, a red square on white background",
+          [{ base64DataUrl: refDataUrl }],
+          OPTS,
+          CONFIG,
+        );
+
+        expect(result.images.length).toBeGreaterThanOrEqual(1);
+        const img = result.images[0];
+        expect(img.b64Json).toBeTruthy();
+        expect(img.b64Json.length).toBeGreaterThan(1000);
+
+        // Verify valid base64
+        const bytes = Uint8Array.from(atob(img.b64Json), (c) => c.charCodeAt(0));
+        expect(bytes.length).toBeGreaterThan(1000);
+
+        console.log(
+          `✅ generateWithRefs: ${bytes.length} bytes, revised_prompt: "${img.revisedPrompt ?? "(none)"}"`,
+        );
+        return; // success
+      } catch (err) {
+        const msg = (err as Error).message;
+        const isRetryable =
+          msg.includes("饱和") || msg.includes("rate") || msg.includes("429");
+        if (!isRetryable || attempt === 3) throw err;
+        const delay = (attempt + 1) * 10_000;
+        console.log(`⏳ generateWithRefs attempt ${attempt + 1} rate-limited, retrying in ${delay / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }, 180_000);
+
   it("testConnection fails with invalid key", async () => {
     const config = {
       id: "openai",
