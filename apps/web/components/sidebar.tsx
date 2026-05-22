@@ -161,7 +161,7 @@ export function Sidebar() {
                 ) : (
                   <div style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
                     {session.type === "edit" && (
-                      <Tag color="purple" style={{ fontSize: 10, lineHeight: "16px", padding: "0 4px", margin: 0, flexShrink: 0 }}>Edit</Tag>
+                      <Tag color="purple" style={{ fontSize: 10, lineHeight: "16px", padding: "0 4px", margin: 0, flexShrink: 0 }}>Edit mode</Tag>
                     )}
                     {session.title}
                   </div>
