@@ -125,63 +125,25 @@ export const openaiProvider: ImageProvider = {
       throw new Error("No reference images provided");
     }
 
-    // Build input: reference images + text prompt
-    const input: unknown[] = referenceImages.map((ref) => ({
-      type: "input_image",
-      image_url: ref.base64DataUrl,
-    }));
-    input.push({ type: "input_text", text: prompt });
+    // Use /images/edits with image[]= for multiple reference images
+    const formData = new FormData();
+    formData.append("model", options.model);
+    formData.append("prompt", prompt);
+    formData.append("size", options.size);
+    formData.append("quality", options.quality);
+    formData.append("n", String(options.n));
+    formData.append("response_format", "b64_json");
 
-    const body = {
-      model: options.model,
-      input,
-      tools: [
-        {
-          type: "image_generation",
-          size: options.size,
-          quality: options.quality,
-        },
-      ],
-    };
-
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
-    };
-
-    const res = await fetch(`${config.baseUrl}/responses`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-      signal,
-    });
-
-    if (!res.ok) {
-      const error = await res
-        .json()
-        .catch(() => ({ error: { message: res.statusText } }));
-      throw new Error(
-        (error as { error?: { message?: string } }).error?.message ??
-          `API error: ${res.status}`,
-      );
+    for (const ref of referenceImages) {
+      const [header, b64] = ref.base64DataUrl.split(",");
+      const mime = header.match(/:(.*?);/)?.[1] ?? "image/png";
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: mime });
+      formData.append("image[]", blob, "reference.png");
     }
 
-    interface ResponsesOutput {
-      type: string;
-      result?: string;
-      revised_prompt?: string;
-    }
-    const data = (await res.json()) as { output: ResponsesOutput[] };
-
-    const images = data.output
-      .filter((item) => item.type === "image_generation_call")
-      .map((item, i) => ({
-        id: `img-${Date.now()}-${i}`,
-        b64Json: item.result ?? "",
-        revisedPrompt: item.revised_prompt,
-      }));
-
-    return { images };
+    const response = await callOpenAI("/images/edits", formData, config, signal);
+    return toGenerateResult(response);
   },
 
   async testConnection(config: ProviderConfig): Promise<boolean> {
