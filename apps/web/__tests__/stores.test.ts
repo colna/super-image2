@@ -1,6 +1,8 @@
 import "fake-indexeddb/auto";
+import type { Message } from "@super-image/utils";
 import { describe, it, expect, beforeEach } from "vitest";
 
+import { db, getMessage } from "../lib/db";
 import { useChatStore } from "../stores/chat-store";
 import { useSettingsStore } from "../stores/settings-store";
 import { useUIStore } from "../stores/ui-store";
@@ -169,6 +171,59 @@ describe("chat-store", () => {
     });
     useChatStore.getState().clearMessages();
     expect(useChatStore.getState().messages).toHaveLength(0);
+  });
+});
+
+// ---- Chat Store: localBlobUrl 持久化回归测试 ----
+
+describe("chat-store updateMessage persistence", () => {
+  beforeEach(async () => {
+    await db.sessions.clear();
+    await db.messages.clear();
+    await db.imageStore.clear();
+    useChatStore.setState({
+      messages: [],
+      loading: false,
+      generating: false,
+      abortController: null,
+    });
+  });
+
+  it("keeps localBlobUrl in memory but strips it from IndexedDB", async () => {
+    const msg: Message = {
+      id: "msg-blob",
+      sessionId: "s1",
+      role: "assistant",
+      type: "generate",
+      content: "",
+      createdAt: Date.now(),
+      status: "generating",
+    };
+    await useChatStore.getState().addMessage(msg);
+
+    await useChatStore.getState().updateMessage("msg-blob", {
+      status: "done",
+      images: [
+        {
+          id: "img-1",
+          revisedPrompt: "a cat",
+          localBlobUrl: "blob:test/transient",
+        },
+      ],
+    });
+
+    // 当前会话内存中保留 localBlobUrl，用于即时展示
+    const inMemory = useChatStore
+      .getState()
+      .messages.find((m) => m.id === "msg-blob");
+    expect(inMemory?.images?.[0]?.localBlobUrl).toBe("blob:test/transient");
+
+    // IndexedDB 不持久化 localBlobUrl（刷新后从此读取，失效的临时 URL 不应残留）
+    const persisted = await getMessage("msg-blob");
+    expect(persisted?.status).toBe("done");
+    expect(persisted?.images?.[0]?.id).toBe("img-1");
+    expect(persisted?.images?.[0]?.revisedPrompt).toBe("a cat");
+    expect(persisted?.images?.[0]?.localBlobUrl).toBeUndefined();
   });
 });
 

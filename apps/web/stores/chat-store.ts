@@ -56,7 +56,19 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   updateMessage: async (id, changes) => {
-    await dbUpdateMessage(id, changes);
+    // localBlobUrl 是仅在当前页面会话有效的临时 object URL，刷新后即失效，
+    // 不能持久化到 IndexedDB（否则重新加载时拿到失效 URL 导致图片无法显示）。
+    // 图片本体已存于 imageStore，重新加载时按 id 重建 URL 即可。
+    const persistedChanges: Partial<Message> = changes.images
+      ? {
+          ...changes,
+          images: changes.images.map((img) => ({
+            id: img.id,
+            revisedPrompt: img.revisedPrompt,
+          })),
+        }
+      : changes;
+    await dbUpdateMessage(id, persistedChanges);
     set((state) => ({
       messages: state.messages.map((m) =>
         m.id === id ? { ...m, ...changes } : m,

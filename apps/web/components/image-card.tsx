@@ -17,20 +17,39 @@ export function ImageCard({ image, onClick, onEdit }: ImageCardProps) {
   const [blobUrl, setBlobUrl] = useState<string | null>(image.localBlobUrl ?? null);
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const recoveredRef = useRef(false);
 
   useEffect(() => {
-    if (blobUrl) return;
+    // 内存中的 localBlobUrl 直接使用;若失效则交给 <img> 的 onError 兜底。
+    // 依赖 image.localBlobUrl 而非 blobUrl，避免 setBlobUrl 触发 effect 重跑后
+    // cleanup 误 revoke 掉刚创建的 URL。
+    if (image.localBlobUrl) return;
     let url: string | null = null;
+    let cancelled = false;
     async function loadBlob() {
       const stored = await getImage(image.id);
-      if (stored) {
+      if (stored && !cancelled) {
         url = URL.createObjectURL(stored.blob);
         setBlobUrl(url);
       }
     }
     loadBlob();
-    return () => { if (url) URL.revokeObjectURL(url); };
-  }, [image.id, blobUrl]);
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [image.id, image.localBlobUrl]);
+
+  // 持久化恢复的 localBlobUrl 在页面刷新后已失效，加载失败时从 IndexedDB 重新生成。
+  const handleError = useCallback(async () => {
+    if (recoveredRef.current) return;
+    recoveredRef.current = true;
+    const stored = await getImage(image.id);
+    if (stored) {
+      setLoaded(false);
+      setBlobUrl(URL.createObjectURL(stored.blob));
+    }
+  }, [image.id]);
 
   const handleDownload = useCallback(async () => {
     const stored = await getImage(image.id);
@@ -61,6 +80,7 @@ export function ImageCard({ image, onClick, onEdit }: ImageCardProps) {
           alt="Generated image"
           onClick={onClick}
           onLoad={() => setLoaded(true)}
+          onError={handleError}
           style={{
             width: "100%",
             borderRadius: 8,
