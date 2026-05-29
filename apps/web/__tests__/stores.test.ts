@@ -134,24 +134,28 @@ describe("chat-store", () => {
     useChatStore.setState({
       messages: [],
       loading: false,
-      generating: false,
-      abortController: null,
+      generatingSessions: {},
+      abortControllers: {},
     });
   });
 
-  it("setGenerating toggles state", () => {
-    useChatStore.getState().setGenerating(true);
-    expect(useChatStore.getState().generating).toBe(true);
+  it("setGenerating toggles state per session", () => {
+    useChatStore.getState().setGenerating("s1", true);
+    expect(useChatStore.getState().isGenerating("s1")).toBe(true);
+    expect(useChatStore.getState().isGenerating("s2")).toBe(false);
   });
 
-  it("cancelGeneration aborts and resets", () => {
+  it("cancelGeneration aborts and resets per session", () => {
     const controller = new AbortController();
-    useChatStore.setState({ abortController: controller, generating: true });
-    useChatStore.getState().cancelGeneration();
+    useChatStore.setState({
+      abortControllers: { s1: controller },
+      generatingSessions: { s1: true },
+    });
+    useChatStore.getState().cancelGeneration("s1");
 
     const state = useChatStore.getState();
-    expect(state.generating).toBe(false);
-    expect(state.abortController).toBeNull();
+    expect(state.isGenerating("s1")).toBe(false);
+    expect(state.abortControllers.s1).toBeUndefined();
     expect(controller.signal.aborted).toBe(true);
   });
 
@@ -184,8 +188,8 @@ describe("chat-store updateMessage persistence", () => {
     useChatStore.setState({
       messages: [],
       loading: false,
-      generating: false,
-      abortController: null,
+      generatingSessions: {},
+      abortControllers: {},
     });
   });
 

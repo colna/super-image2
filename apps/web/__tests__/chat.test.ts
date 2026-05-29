@@ -30,8 +30,8 @@ beforeEach(async () => {
   useChatStore.setState({
     messages: [],
     loading: false,
-    generating: false,
-    abortController: null,
+    generatingSessions: {},
+    abortControllers: {},
   });
 });
 
@@ -77,7 +77,7 @@ describe("sendGenerate", () => {
     expect(state.messages[1].role).toBe("assistant");
     expect(state.messages[1].status).toBe("done");
     expect(state.messages[1].images).toHaveLength(1);
-    expect(state.generating).toBe(false);
+    expect(state.isGenerating(sessionId)).toBe(false);
 
     const dbMessages = await getMessagesBySession(sessionId);
     expect(dbMessages).toHaveLength(2);
@@ -123,7 +123,7 @@ describe("sendGenerate", () => {
     expect(state.messages).toHaveLength(2);
     expect(state.messages[1].status).toBe("error");
     expect(state.messages[1].content).toContain("Invalid API key");
-    expect(state.generating).toBe(false);
+    expect(state.isGenerating(sessionId)).toBe(false);
   });
 
   it("supports cancellation via AbortController", async () => {
@@ -165,7 +165,7 @@ describe("sendGenerate", () => {
       });
 
     await new Promise((r) => setTimeout(r, 10));
-    useChatStore.getState().cancelGeneration();
+    useChatStore.getState().cancelGeneration(sessionId);
 
     await generatePromise;
 

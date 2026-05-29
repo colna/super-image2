@@ -15,16 +15,19 @@ import { useSettingsStore } from "@/stores/settings-store";
 export interface ChatState {
   messages: Message[];
   loading: boolean;
-  generating: boolean;
-  abortController: AbortController | null;
+  /** Per-session generating flags so concurrent sessions don't block each other */
+  generatingSessions: Record<string, boolean>;
+  /** Per-session abort controllers */
+  abortControllers: Record<string, AbortController>;
 
   // Actions
   loadMessages: (sessionId: string) => Promise<void>;
   addMessage: (message: Message) => Promise<void>;
   updateMessage: (id: string, changes: Partial<Message>) => Promise<void>;
-  setGenerating: (generating: boolean) => void;
-  setAbortController: (controller: AbortController | null) => void;
-  cancelGeneration: () => void;
+  isGenerating: (sessionId: string) => boolean;
+  setGenerating: (sessionId: string, generating: boolean) => void;
+  setAbortController: (sessionId: string, controller: AbortController | null) => void;
+  cancelGeneration: (sessionId: string) => void;
   clearMessages: () => void;
   sendGenerate: (
     sessionId: string,
@@ -48,8 +51,8 @@ export interface ChatState {
 export const useChatStore = create<ChatState>()((set, get) => ({
   messages: [],
   loading: false,
-  generating: false,
-  abortController: null,
+  generatingSessions: {},
+  abortControllers: {},
 
   loadMessages: async (sessionId) => {
     set({ messages: [], loading: true });
@@ -83,15 +86,32 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }));
   },
 
-  setGenerating: (generating) => set({ generating }),
+  isGenerating: (sessionId) => !!get().generatingSessions[sessionId],
 
-  setAbortController: (controller) => set({ abortController: controller }),
+  setGenerating: (sessionId, generating) =>
+    set((state) => ({
+      generatingSessions: { ...state.generatingSessions, [sessionId]: generating },
+    })),
 
-  cancelGeneration: () => {
-    const { abortController } = get();
-    if (abortController) {
-      abortController.abort();
-      set({ abortController: null, generating: false });
+  setAbortController: (sessionId, controller) =>
+    set((state) => {
+      if (controller) {
+        return { abortControllers: { ...state.abortControllers, [sessionId]: controller } };
+      }
+      const { [sessionId]: _, ...rest } = state.abortControllers;
+      return { abortControllers: rest };
+    }),
+
+  cancelGeneration: (sessionId) => {
+    const { abortControllers } = get();
+    const controller = abortControllers[sessionId];
+    if (controller) {
+      controller.abort();
+      const { [sessionId]: _, ...restControllers } = abortControllers;
+      set((state) => ({
+        abortControllers: restControllers,
+        generatingSessions: { ...state.generatingSessions, [sessionId]: false },
+      }));
     }
   },
 
@@ -134,8 +154,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     // 3. Call provider
     const controller = new AbortController();
-    setAbortController(controller);
-    setGenerating(true);
+    setAbortController(sessionId, controller);
+    setGenerating(sessionId, true);
 
     try {
       const result = await provider.generate(
@@ -177,8 +197,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         });
       }
     } finally {
-      setGenerating(false);
-      setAbortController(null);
+      setGenerating(sessionId, false);
+      setAbortController(sessionId, null);
     }
   },
 
@@ -224,8 +244,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     // 4. Call provider.edit
     const controller = new AbortController();
-    setAbortController(controller);
-    setGenerating(true);
+    setAbortController(sessionId, controller);
+    setGenerating(sessionId, true);
 
     try {
       const result = await provider.edit(
@@ -268,8 +288,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         });
       }
     } finally {
-      setGenerating(false);
-      setAbortController(null);
+      setGenerating(sessionId, false);
+      setAbortController(sessionId, null);
     }
   },
 
@@ -348,8 +368,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     // 5. Call provider: images → generateWithRefs, text-only → generate
     const controller = new AbortController();
-    setAbortController(controller);
-    setGenerating(true);
+    setAbortController(sessionId, controller);
+    setGenerating(sessionId, true);
 
     try {
       const opts = { model: config.defaultModel, ...params };
@@ -389,8 +409,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         });
       }
     } finally {
-      setGenerating(false);
-      setAbortController(null);
+      setGenerating(sessionId, false);
+      setAbortController(sessionId, null);
     }
   },
 }));

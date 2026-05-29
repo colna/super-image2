@@ -17,8 +17,9 @@ interface ChatAreaProps {
 }
 
 export function ChatArea({ sessionId }: ChatAreaProps) {
-  const { messages, loading, generating, loadMessages, sendGenerate, sendEdit, sendGenerateWithRefs, cancelGeneration } =
+  const { messages, loading, isGenerating, loadMessages, sendGenerate, sendEdit, sendGenerateWithRefs, cancelGeneration } =
     useChatStore();
+  const generating = isGenerating(sessionId);
   const { getSession, createSession, updateSession } = useSessionStore();
   const router = useRouter();
 
@@ -142,7 +143,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
         <MessageList
           messages={messages}
           onRetry={handleRetry}
-          onCancel={generating ? cancelGeneration : undefined}
+          onCancel={generating ? () => cancelGeneration(sessionId) : undefined}
           onEdit={handleEditImage}
         />
       )}
