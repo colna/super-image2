@@ -81,7 +81,7 @@ export default function Home() {
           type="primary"
           shape="round"
           size="large"
-          href="/chat"
+          href="https://super-image2.vercel.app/chat"
           icon={<ArrowRightOutlined />}
           iconPosition="end"
           style={{ height: 44, paddingInline: 28, fontSize: 15 }}
