@@ -8,6 +8,7 @@ import { ChatInput } from "@/components/chat-input";
 import { EditSourcePreview } from "@/components/edit-source-preview";
 import { MessageList } from "@/components/message-list";
 import { getAttachmentsByMessage } from "@/lib/db";
+import { takePendingToolJob } from "@/lib/tools/pending-tool-job";
 import { useChatStore } from "@/stores/chat-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -29,6 +30,14 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
 
   useEffect(() => {
     loadMessages(sessionId).then(() => {
+      // Check for a pending tool job (header toolbar → new session).
+      // Reference images are File objects, so they're held in memory rather
+      // than sessionStorage; consume the job once after messages have loaded.
+      const toolJob = takePendingToolJob(sessionId);
+      if (toolJob) {
+        sendGenerateWithRefs(sessionId, toolJob.prompt, toolJob.files, toolJob.params);
+        return;
+      }
       // Check for pending prompt from new session creation
       const pendingKey = `pending-prompt-${sessionId}`;
       const pending = sessionStorage.getItem(pendingKey);
@@ -41,7 +50,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
         sendGenerate(sessionId, prompt, params);
       }
     });
-  }, [sessionId, loadMessages, sendGenerate]);
+  }, [sessionId, loadMessages, sendGenerate, sendGenerateWithRefs]);
 
   const handleSend = useCallback(
     async (prompt: string, params: { size: string; quality: string; n: number }, attachments?: File[]) => {
