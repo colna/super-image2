@@ -8,6 +8,7 @@ import { type ReactNode, useCallback, useMemo } from "react";
 
 import { SettingsPanel } from "@/components/settings-panel";
 import { Sidebar } from "@/components/sidebar";
+import { Toolbar } from "@/components/toolbar";
 import { UserGuide } from "@/components/user-guide";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { useI18n } from "@/lib/i18n";
@@ -133,6 +134,7 @@ export function ChatLayout({ children }: { children: ReactNode }) {
               <Title level={5} style={{ margin: 0, fontSize: 14 }}>
                 {t("app.title")}
               </Title>
+              <Toolbar />
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <Button
