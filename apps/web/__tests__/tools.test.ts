@@ -70,7 +70,7 @@ describe("pending tool job", () => {
     toolId: "character-sheet",
     prompt: "p",
     files: [],
-    params: { size: "1024x1024", quality: "auto", n: 1 },
+    params: { model: "gpt-image-2", size: "1024x1024", quality: "auto", n: 1 },
   };
 
   beforeEach(() => {

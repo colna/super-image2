@@ -12,7 +12,6 @@ function makeProviderConfig(overrides: Partial<{ apiKey: string }> = {}) {
     displayName: "OpenAI",
     apiKey: overrides.apiKey ?? "sk-test",
     baseUrl: "https://api.example.com/v1",
-    defaultModel: "gpt-image-2",
     defaultParams: {
       model: "gpt-image-2",
       size: "1024x1024",
@@ -59,12 +58,13 @@ describe("sendGenerate", () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            data: [{ b64_json: fakeB64, revised_prompt: "A revised prompt" }],
+            images: [{ id: "img-1", b64Json: fakeB64, revisedPrompt: "A revised prompt" }],
           }),
       }),
     );
 
     await useChatStore.getState().sendGenerate(sessionId, "a cat", {
+      model: "gpt-image-2",
       size: "1024x1024",
       quality: "auto",
       n: 1,
@@ -109,11 +109,12 @@ describe("sendGenerate", () => {
       vi.fn().mockResolvedValue({
         ok: false,
         status: 401,
-        json: () => Promise.resolve({ error: { message: "Invalid API key" } }),
+        json: () => Promise.resolve({ error: "Invalid API key" }),
       }),
     );
 
     await useChatStore.getState().sendGenerate(sessionId, "a dog", {
+      model: "gpt-image-2",
       size: "1024x1024",
       quality: "auto",
       n: 1,
@@ -159,6 +160,7 @@ describe("sendGenerate", () => {
     const generatePromise = useChatStore
       .getState()
       .sendGenerate(sessionId, "a bird", {
+        model: "gpt-image-2",
         size: "1024x1024",
         quality: "auto",
         n: 1,

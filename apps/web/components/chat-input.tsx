@@ -1,7 +1,15 @@
 "use client";
 
-import { CloseOutlined, FileOutlined, PaperClipOutlined, SendOutlined } from "@ant-design/icons";
-import { Button, Select, Space } from "antd";
+import {
+  CloseOutlined,
+  DownOutlined,
+  FileOutlined,
+  PaperClipOutlined,
+  SendOutlined,
+  UpOutlined,
+} from "@ant-design/icons";
+import type { GenerateParams, ImageOutputFormat } from "@super-image/utils";
+import { Button, InputNumber, Popover, Select, Space } from "antd";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { useI18n } from "@/lib/i18n";
@@ -11,7 +19,7 @@ import { useSettingsStore } from "@/stores/settings-store";
 interface ChatInputProps {
   onSend: (
     prompt: string,
-    params: { size: string; quality: string; n: number },
+    params: GenerateParams,
     attachments?: File[],
   ) => void;
   disabled?: boolean;
@@ -19,11 +27,28 @@ interface ChatInputProps {
 
 const MAX_FILES = 5;
 
+const PILL_STYLE: React.CSSProperties = {
+  background: "#f5f5f5",
+  border: "none",
+  borderRadius: 8,
+  height: 32,
+  display: "flex",
+  alignItems: "center",
+};
+
+const LABEL_STYLE: React.CSSProperties = {
+  fontSize: 12,
+  color: "#888",
+  width: 92,
+  flexShrink: 0,
+};
+
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [shake, setShake] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useI18n();
@@ -31,6 +56,18 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const { providers, activeProviderId, updateProviderField } = useSettingsStore();
   const config = providers[activeProviderId];
   const providerDef = getProvider(config?.providerType ?? activeProviderId);
+  const params = config?.defaultParams;
+
+  const updateParams = useCallback(
+    (patch: Partial<GenerateParams>) => {
+      if (!config) return;
+      updateProviderField(activeProviderId, "defaultParams", {
+        ...config.defaultParams,
+        ...patch,
+      });
+    },
+    [config, activeProviderId, updateProviderField],
+  );
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -60,6 +97,35 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     [files],
   );
 
+  const modelOptions = useMemo(() => {
+    const discovered = config?.availableModels ?? [];
+    const fallback = providerDef?.models ?? [];
+    const list = discovered.length > 0 ? discovered : fallback;
+    if (params?.model && !list.some((m) => m.id === params.model)) {
+      return [{ id: params.model, name: params.model }, ...list];
+    }
+    return list;
+  }, [config?.availableModels, providerDef?.models, params?.model]);
+
+  const isGif = params?.outputFormat === "gif";
+
+  const advancedSummary = useMemo(() => {
+    if (!params) return "";
+    const parts = [
+      `${t("chat.complexity")} ${params.complexity ?? "auto"}`,
+    ];
+    if (isGif) {
+      parts.push(
+        `${(params.outputFormat ?? "png").toUpperCase()} · ${params.frameCount ?? 9} ${t("chat.frameUnit")}`,
+      );
+    } else {
+      parts.push((params.outputFormat ?? "png").toUpperCase());
+    }
+    parts.push(`${t("chat.transparent")} ${String(params.transparent ?? false)}`);
+    parts.push(`${t("chat.moderation")} ${params.moderation ?? "auto"}`);
+    return parts.join(" · ");
+  }, [params, isGif, t]);
+
   const handleSend = useCallback(() => {
     const trimmed = value.trim();
     if (!trimmed) {
@@ -67,21 +133,14 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       setTimeout(() => setShake(false), 500);
       return;
     }
-    onSend(
-      trimmed,
-      {
-        size: config?.defaultParams.size ?? "1024x1024",
-        quality: config?.defaultParams.quality ?? "auto",
-        n: config?.defaultParams.n ?? 1,
-      },
-      files.length > 0 ? files : undefined,
-    );
+    if (!params) return;
+    onSend(trimmed, params, files.length > 0 ? files : undefined);
     setValue("");
     setFiles([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  }, [value, onSend, config, files]);
+  }, [value, onSend, params, files]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -120,7 +179,103 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     [addFiles],
   );
 
-  if (!config || !providerDef) return null;
+  if (!config || !providerDef || !params) return null;
+
+  const advancedPanel = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 4, width: 300 }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <span style={LABEL_STYLE}>{t("chat.complexity")}</span>
+        <Select
+          aria-label={t("chat.complexity")}
+          value={params.complexity ?? "auto"}
+          onChange={(v) => updateParams({ complexity: v })}
+          variant="borderless"
+          style={{ ...PILL_STYLE, flex: 1 }}
+          options={["auto", "low", "medium", "high"].map((v) => ({
+            label: v,
+            value: v,
+          }))}
+        />
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <span style={LABEL_STYLE}>{t("chat.format")}</span>
+        <Select<ImageOutputFormat>
+          aria-label={t("chat.format")}
+          value={params.outputFormat ?? "png"}
+          onChange={(v) => updateParams({ outputFormat: v })}
+          variant="borderless"
+          style={{ ...PILL_STYLE, flex: 1 }}
+          options={["png", "jpeg", "webp", "gif"].map((v) => ({
+            label: v.toUpperCase(),
+            value: v,
+          }))}
+        />
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <span style={{ ...LABEL_STYLE, opacity: isGif ? 1 : 0.45 }}>
+          {t("chat.frameCount")}
+        </span>
+        <InputNumber
+          aria-label={t("chat.frameCount")}
+          min={2}
+          max={16}
+          precision={0}
+          disabled={!isGif}
+          value={params.frameCount ?? 9}
+          onChange={(v) => updateParams({ frameCount: v ?? 9 })}
+          variant="borderless"
+          style={{ ...PILL_STYLE, flex: 1, width: "100%" }}
+        />
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <span style={{ ...LABEL_STYLE, opacity: isGif ? 1 : 0.45 }}>
+          {t("chat.frameDuration")}
+        </span>
+        <InputNumber
+          aria-label={t("chat.frameDuration")}
+          min={20}
+          max={2000}
+          step={10}
+          precision={0}
+          disabled={!isGif}
+          value={params.frameDurationMs ?? 200}
+          onChange={(v) => updateParams({ frameDurationMs: v ?? 200 })}
+          variant="borderless"
+          style={{ ...PILL_STYLE, flex: 1, width: "100%" }}
+        />
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <span style={LABEL_STYLE}>{t("chat.transparent")}</span>
+        <Select
+          aria-label={t("chat.transparent")}
+          value={params.transparent ?? false}
+          onChange={(v) => updateParams({ transparent: v })}
+          variant="borderless"
+          style={{ ...PILL_STYLE, flex: 1 }}
+          options={[
+            { label: "false", value: false },
+            { label: "true", value: true },
+          ]}
+        />
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <span style={LABEL_STYLE}>{t("chat.moderation")}</span>
+        <Select
+          aria-label={t("chat.moderation")}
+          value={params.moderation ?? "auto"}
+          onChange={(v) => updateParams({ moderation: v })}
+          variant="borderless"
+          style={{ ...PILL_STYLE, flex: 1 }}
+          options={["auto", "low"].map((v) => ({ label: v, value: v }))}
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -132,15 +287,25 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       {/* Quick params bar */}
       <Space wrap size={12} style={{ marginBottom: 8 }}>
         <Space size={4} align="center">
+          <span style={{ fontSize: 12, color: "#888" }}>{t("chat.model")}</span>
+          <Select
+            aria-label={t("chat.model")}
+            value={params.model}
+            onChange={(v) => updateParams({ model: v })}
+            size="small"
+            style={{ minWidth: 180 }}
+            showSearch
+            optionFilterProp="label"
+            options={modelOptions.map((m) => ({ label: m.name, value: m.id }))}
+          />
+        </Space>
+
+        <Space size={4} align="center">
           <span style={{ fontSize: 12, color: "#888" }}>{t("chat.size")}</span>
           <Select
-            value={config.defaultParams.size}
-            onChange={(v) =>
-              updateProviderField(activeProviderId, "defaultParams", {
-                ...config.defaultParams,
-                size: v,
-              })
-            }
+            aria-label={t("chat.size")}
+            value={params.size}
+            onChange={(v) => updateParams({ size: v })}
             size="small"
             style={{ minWidth: 110 }}
             options={providerDef.supportedSizes.map((s) => ({ label: s, value: s }))}
@@ -150,13 +315,9 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         <Space size={4} align="center">
           <span style={{ fontSize: 12, color: "#888" }}>{t("chat.quality")}</span>
           <Select
-            value={config.defaultParams.quality}
-            onChange={(v) =>
-              updateProviderField(activeProviderId, "defaultParams", {
-                ...config.defaultParams,
-                quality: v,
-              })
-            }
+            aria-label={t("chat.quality")}
+            value={params.quality}
+            onChange={(v) => updateParams({ quality: v })}
             size="small"
             style={{ minWidth: 90 }}
             options={providerDef.supportedQualities.map((q) => ({ label: q, value: q }))}
@@ -166,13 +327,9 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         <Space size={4} align="center">
           <span style={{ fontSize: 12, color: "#888" }}>{t("chat.n")}</span>
           <Select
-            value={config.defaultParams.n}
-            onChange={(v) =>
-              updateProviderField(activeProviderId, "defaultParams", {
-                ...config.defaultParams,
-                n: v,
-              })
-            }
+            aria-label={t("chat.n")}
+            value={params.n}
+            onChange={(v) => updateParams({ n: v })}
             size="small"
             style={{ minWidth: 56 }}
             options={Array.from({ length: providerDef.maxN }, (_, i) => ({
@@ -182,6 +339,45 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           />
         </Space>
       </Space>
+
+      {/* Advanced params summary */}
+      <Popover
+        content={advancedPanel}
+        trigger="click"
+        placement="topLeft"
+        arrow={false}
+        open={advancedOpen}
+        onOpenChange={setAdvancedOpen}
+      >
+        <button
+          type="button"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            maxWidth: "100%",
+            padding: "4px 10px",
+            marginBottom: 8,
+            fontSize: 12,
+            color: "#666",
+            background: "#fafafa",
+            border: "1px solid #ededed",
+            borderRadius: 999,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          <span style={{ fontWeight: 500, color: "#1a1a1a" }}>
+            {t("chat.more")}
+          </span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+            · {advancedSummary}
+          </span>
+          {advancedOpen ? <UpOutlined style={{ fontSize: 10 }} /> : <DownOutlined style={{ fontSize: 10 }} />}
+        </button>
+      </Popover>
 
       {/* Attachment previews */}
       {files.length > 0 && (

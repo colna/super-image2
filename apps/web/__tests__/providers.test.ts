@@ -11,7 +11,6 @@ function makeConfig(
     displayName: "OpenAI",
     apiKey: overrides.apiKey ?? "sk-test",
     baseUrl: overrides.baseUrl ?? "https://api.example.com/v1",
-    defaultModel: "gpt-image-2",
     defaultParams: {
       model: "gpt-image-2",
       size: "1024x1024",
@@ -211,5 +210,96 @@ describe("openai provider", () => {
       makeConfig({ baseUrl: "https://bad.example.com/v1" }),
     );
     expect(result).toBe(false);
+  });
+});
+
+describe("openai provider advanced params", () => {
+  function stubFetch() {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [{ b64_json: "x" }] }),
+    });
+    globalThis.fetch = fetchSpy;
+    return fetchSpy;
+  }
+
+  function requestBody(fetchSpy: ReturnType<typeof stubFetch>) {
+    return JSON.parse(fetchSpy.mock.calls[0][1].body as string) as Record<
+      string,
+      unknown
+    >;
+  }
+
+  it("maps gif frame params, complexity and transparency", async () => {
+    const fetchSpy = stubFetch();
+    await openaiProvider.generate(
+      "a cat",
+      {
+        model: "gpt-image-2.6",
+        size: "1024x1024",
+        quality: "high",
+        n: 1,
+        complexity: "high",
+        outputFormat: "gif",
+        frameCount: 4,
+        frameDurationMs: 200,
+        transparent: true,
+        moderation: "low",
+      },
+      makeConfig(),
+    );
+
+    const body = requestBody(fetchSpy);
+    expect(body.output_format).toBe("gif");
+    expect(body.frame_count).toBe(4);
+    expect(body.frame_duration_ms).toBe(200);
+    expect(body.complexity).toBe("high");
+    expect(body.background).toBe("transparent");
+    expect(body.moderation).toBe("low");
+  });
+
+  it("omits frame params when output is not gif", async () => {
+    const fetchSpy = stubFetch();
+    await openaiProvider.generate(
+      "a cat",
+      {
+        model: "gpt-image-2",
+        size: "1024x1024",
+        quality: "auto",
+        n: 1,
+        outputFormat: "png",
+        frameCount: 9,
+        frameDurationMs: 200,
+      },
+      makeConfig(),
+    );
+
+    const body = requestBody(fetchSpy);
+    expect(body.output_format).toBe("png");
+    expect(body.frame_count).toBeUndefined();
+    expect(body.frame_duration_ms).toBeUndefined();
+    expect(body.background).toBeUndefined();
+  });
+
+  it("listModels keeps image models only", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          data: [
+            { id: "gpt-6.2-astra" },
+            { id: "gpt-image-2.5-sunburst", display_name: "Sunburst" },
+            { id: "gpt-image-2" },
+          ],
+        }),
+    });
+    globalThis.fetch = fetchSpy;
+
+    const models = await openaiProvider.listModels!(makeConfig());
+    expect(models.map((m) => m.id)).toEqual([
+      "gpt-image-2.5-sunburst",
+      "gpt-image-2",
+    ]);
+    expect(models[0].name).toBe("Sunburst");
   });
 });

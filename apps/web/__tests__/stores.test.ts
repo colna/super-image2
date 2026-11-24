@@ -19,7 +19,6 @@ describe("settings-store", () => {
           displayName: "OpenAI",
           apiKey: "",
           baseUrl: "https://api.openai.com/v1",
-          defaultModel: "gpt-image-2",
           defaultParams: {
             model: "gpt-image-2",
             size: "1024x1024",
@@ -53,7 +52,6 @@ describe("settings-store", () => {
       displayName: "Custom",
       apiKey: "key",
       baseUrl: "https://example.com",
-      defaultModel: "model-1",
       defaultParams: {
         model: "model-1",
         size: "512x512",
@@ -80,7 +78,6 @@ describe("settings-store", () => {
       displayName: "Second",
       apiKey: "",
       baseUrl: "https://api.openai.com/v1",
-      defaultModel: "gpt-image-2",
       defaultParams: {
         model: "gpt-image-2",
         size: "1024x1024",

@@ -1,4 +1,9 @@
-import type { Attachment, ImageInput, ImageResult, Message } from "@super-image/utils";
+import type {
+  Attachment,
+  GenerateParams,
+  ImageResult,
+  Message,
+} from "@super-image/utils";
 import { create } from "zustand";
 
 import {
@@ -9,8 +14,24 @@ import {
   saveImage,
   updateMessage as dbUpdateMessage,
 } from "@/lib/db";
-import { getProvider } from "@/lib/providers";
+import {
+  requestEdit,
+  requestGenerate,
+  requestGenerateWithRefs,
+} from "@/lib/generation-client";
 import { useSettingsStore } from "@/stores/settings-store";
+
+/** 生成参数以 UI 传入为准，缺失模型时回落到服务商上次选择 */
+function resolveParams(
+  params: GenerateParams,
+  fallback: GenerateParams,
+): GenerateParams {
+  return {
+    ...fallback,
+    ...params,
+    model: params.model || fallback.model,
+  };
+}
 
 export interface ChatState {
   messages: Message[];
@@ -32,19 +53,19 @@ export interface ChatState {
   sendGenerate: (
     sessionId: string,
     prompt: string,
-    params: { size: string; quality: string; n: number },
+    params: GenerateParams,
   ) => Promise<void>;
   sendEdit: (
     sessionId: string,
     prompt: string,
     sourceImageId: string,
-    params: { size: string; quality: string; n: number },
+    params: GenerateParams,
   ) => Promise<void>;
   sendGenerateWithRefs: (
     sessionId: string,
     prompt: string,
     attachmentFiles: File[],
-    params: { size: string; quality: string; n: number },
+    params: GenerateParams,
   ) => Promise<void>;
 }
 
@@ -121,9 +142,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     const { addMessage, updateMessage, setGenerating, setAbortController } = get();
     const settings = useSettingsStore.getState();
     const config = settings.providers[settings.activeProviderId];
-    const provider = getProvider(config?.providerType ?? settings.activeProviderId);
 
-    if (!config || !provider) return;
+    if (!config) return;
+
+    const resolved = resolveParams(params, config.defaultParams);
 
     // 1. Add user message
     const userMsg: Message = {
@@ -134,7 +156,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       content: prompt,
       createdAt: Date.now(),
       status: "done",
-      params: { model: config.defaultModel, ...params },
+      params: resolved,
     };
     await addMessage(userMsg);
 
@@ -148,20 +170,20 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       content: "",
       createdAt: Date.now(),
       status: "generating",
-      params: { model: config.defaultModel, ...params },
+      params: resolved,
     };
     await addMessage(aiMsg);
 
-    // 3. Call provider
+    // 3. Call provider through the same-origin API route
     const controller = new AbortController();
     setAbortController(sessionId, controller);
     setGenerating(sessionId, true);
 
     try {
-      const result = await provider.generate(
-        prompt,
-        { model: config.defaultModel, ...params },
+      const result = await requestGenerate(
         config,
+        prompt,
+        resolved,
         controller.signal,
       );
 
@@ -206,13 +228,14 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     const { addMessage, updateMessage, setGenerating, setAbortController } = get();
     const settings = useSettingsStore.getState();
     const config = settings.providers[settings.activeProviderId];
-    const provider = getProvider(config?.providerType ?? settings.activeProviderId);
 
-    if (!config || !provider || !provider.edit) return;
+    if (!config) return;
 
     // 1. Load source image blob from IndexedDB
     const stored = await getImage(sourceImageId);
     if (!stored) return;
+
+    const resolved = resolveParams(params, config.defaultParams);
 
     // 2. Add user message
     const userMsg: Message = {
@@ -224,7 +247,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       sourceImage: sourceImageId,
       createdAt: Date.now(),
       status: "done",
-      params: { model: config.defaultModel, ...params },
+      params: resolved,
     };
     await addMessage(userMsg);
 
@@ -238,21 +261,21 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       content: "",
       createdAt: Date.now(),
       status: "generating",
-      params: { model: config.defaultModel, ...params },
+      params: resolved,
     };
     await addMessage(aiMsg);
 
-    // 4. Call provider.edit
+    // 4. Call provider through the same-origin API route
     const controller = new AbortController();
     setAbortController(sessionId, controller);
     setGenerating(sessionId, true);
 
     try {
-      const result = await provider.edit(
+      const result = await requestEdit(
+        config,
         prompt,
         stored.blob,
-        { model: config.defaultModel, ...params },
-        config,
+        resolved,
         controller.signal,
       );
 
@@ -297,14 +320,15 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     const { addMessage, updateMessage, setGenerating, setAbortController } = get();
     const settings = useSettingsStore.getState();
     const config = settings.providers[settings.activeProviderId];
-    const provider = getProvider(config?.providerType ?? settings.activeProviderId);
 
-    if (!config || !provider) return;
+    if (!config) return;
 
-    // 1. Build attachments metadata + convert files to base64 data URLs
+    const resolved = resolveParams(params, config.defaultParams);
+
+    // 1. Build attachments metadata + collect image files for the API
     const userMsgId = crypto.randomUUID();
     const attachments: Attachment[] = [];
-    const referenceImages: ImageInput[] = [];
+    const referenceFiles: File[] = [];
 
     const textContents: string[] = [];
 
@@ -323,9 +347,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       await saveAttachment(id, file, userMsgId, file.name, file.type);
 
       if (isImage) {
-        // Convert image files to base64 data URL for API
-        const base64 = await fileToBase64DataUrl(file);
-        referenceImages.push({ base64DataUrl: base64 });
+        // 服务端路由直接接收 File，避免前端再转 base64 多一次内存拷贝
+        referenceFiles.push(file);
       } else if (isTextFile(file)) {
         // Read text-based files and append content to prompt
         const text = await file.text();
@@ -343,7 +366,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       attachments,
       createdAt: Date.now(),
       status: "done",
-      params: { model: config.defaultModel, ...params },
+      params: resolved,
     };
     await addMessage(userMsg);
 
@@ -357,7 +380,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       content: "",
       createdAt: Date.now(),
       status: "generating",
-      params: { model: config.defaultModel, ...params },
+      params: resolved,
     };
     await addMessage(aiMsg);
 
@@ -366,16 +389,26 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       ? `${prompt}\n\n---\n${textContents.join("\n\n")}`
       : prompt;
 
-    // 5. Call provider: images → generateWithRefs, text-only → generate
+    // 5. Call provider: images → edits, text-only → generations
     const controller = new AbortController();
     setAbortController(sessionId, controller);
     setGenerating(sessionId, true);
 
     try {
-      const opts = { model: config.defaultModel, ...params };
-      const result = referenceImages.length > 0 && provider.generateWithRefs
-        ? await provider.generateWithRefs(enrichedPrompt, referenceImages, opts, config, controller.signal)
-        : await provider.generate(enrichedPrompt, opts, config, controller.signal);
+      const result = referenceFiles.length > 0
+        ? await requestGenerateWithRefs(
+            config,
+            enrichedPrompt,
+            referenceFiles,
+            resolved,
+            controller.signal,
+          )
+        : await requestGenerate(
+            config,
+            enrichedPrompt,
+            resolved,
+            controller.signal,
+          );
 
       // 5. Decode base64 → Blob → save to IndexedDB
       const images: ImageResult[] = [];
@@ -414,15 +447,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }
   },
 }));
-
-function fileToBase64DataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 const TEXT_EXTENSIONS = new Set([
   "txt", "md", "json", "csv", "xml", "html", "css", "js", "ts", "tsx",

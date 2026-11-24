@@ -76,8 +76,20 @@ describe("POST /api/test-connection", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns ok: true on success", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+  it("returns ok: true and discovered models on success", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: [
+              { id: "gpt-6.2-astra" },
+              { id: "gpt-image-2.5-sunburst" },
+            ],
+          }),
+      }),
+    );
     const res = await testConnectionPost(
       makeRequest({
         providerId: "openai",
@@ -88,5 +100,8 @@ describe("POST /api/test-connection", () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.ok).toBe(true);
+    expect(json.models).toEqual([
+      { id: "gpt-image-2.5-sunburst", name: "gpt-image-2.5-sunburst" },
+    ]);
   });
 });

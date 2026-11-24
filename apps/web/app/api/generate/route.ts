@@ -1,14 +1,14 @@
+import type { GenerateParams } from "@super-image/utils";
 import { NextResponse } from "next/server";
 
 import { getProvider } from "@/lib/providers";
 
-interface GenerateRequest {
+/** 中转单张常需 60~250s，本地不限制，部署到 Serverless 时按平台上限放宽 */
+export const maxDuration = 300;
+
+interface GenerateRequest extends GenerateParams {
   providerId: string;
   prompt: string;
-  model: string;
-  size: string;
-  quality: string;
-  n: number;
   apiKey: string;
   baseUrl: string;
 }
@@ -16,9 +16,24 @@ interface GenerateRequest {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as GenerateRequest;
-    const { providerId, prompt, model, size, quality, n, apiKey, baseUrl } = body;
+    const {
+      providerId,
+      prompt,
+      apiKey,
+      baseUrl,
+      model,
+      size,
+      quality,
+      n,
+      complexity,
+      outputFormat,
+      frameCount,
+      frameDurationMs,
+      transparent,
+      moderation,
+    } = body;
 
-    if (!prompt || !apiKey) {
+    if (!prompt || !apiKey || !baseUrl) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
@@ -33,20 +48,28 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await provider.generate(
-      prompt,
-      { model, size, quality, n },
-      {
-        id: providerId,
-        providerType: providerId,
-        displayName: providerId,
-        apiKey,
-        baseUrl,
-        defaultModel: model,
-        defaultParams: { model, size, quality, n },
-        connectionStatus: "unknown",
-      },
-    );
+    const params: GenerateParams = {
+      model,
+      size,
+      quality,
+      n,
+      complexity,
+      outputFormat,
+      frameCount,
+      frameDurationMs,
+      transparent,
+      moderation,
+    };
+
+    const result = await provider.generate(prompt, params, {
+      id: providerId,
+      providerType: providerId,
+      displayName: providerId,
+      apiKey,
+      baseUrl,
+      defaultParams: params,
+      connectionStatus: "unknown",
+    });
 
     return NextResponse.json(result);
   } catch (err) {

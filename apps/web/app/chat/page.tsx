@@ -1,5 +1,6 @@
 "use client";
 
+import type { GenerateParams } from "@super-image/utils";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
@@ -14,7 +15,7 @@ export default function ChatPage() {
   const { activeProviderId, providers } = useSettingsStore();
 
   const createAndNavigate = useCallback(
-    async (prompt: string, params: { size: string; quality: string; n: number }) => {
+    async (prompt: string, params: GenerateParams) => {
       const config = providers[activeProviderId];
       const sessionId = crypto.randomUUID();
       await createSession({
@@ -23,7 +24,7 @@ export default function ChatPage() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         providerId: activeProviderId,
-        modelId: config?.defaultModel ?? "gpt-image-2",
+        modelId: params.model || config?.defaultParams.model || "gpt-image-2",
       });
 
       sessionStorage.setItem(
@@ -38,10 +39,11 @@ export default function ChatPage() {
   const handlePromptClick = useCallback(
     (prompt: string) => {
       const config = providers[activeProviderId];
-      createAndNavigate(prompt, {
-        size: config?.defaultParams.size ?? "1024x1024",
-        quality: config?.defaultParams.quality ?? "auto",
-        n: config?.defaultParams.n ?? 1,
+      createAndNavigate(prompt, config?.defaultParams ?? {
+        model: "gpt-image-2",
+        size: "1024x1024",
+        quality: "auto",
+        n: 1,
       });
     },
     [createAndNavigate, providers, activeProviderId],

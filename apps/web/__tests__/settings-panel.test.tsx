@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 
-import { useSettingsStore } from "../stores/settings-store";
+import { migrateV2, useSettingsStore } from "../stores/settings-store";
 import { useUIStore } from "../stores/ui-store";
 
 beforeEach(() => {
@@ -13,7 +13,6 @@ beforeEach(() => {
         displayName: "OpenAI",
         apiKey: "",
         baseUrl: "https://api.openai.com/v1",
-        defaultModel: "gpt-image-2",
         defaultParams: { model: "gpt-image-2", size: "1024x1024", quality: "auto", n: 1 },
         connectionStatus: "unknown",
       },
@@ -34,7 +33,7 @@ describe("settings-panel store interactions", () => {
     const provider = state.providers[state.activeProviderId];
     expect(provider).toBeDefined();
     expect(provider.baseUrl).toContain("openai.com");
-    expect(provider.defaultModel).toBe("gpt-image-2");
+    expect(provider.defaultParams.model).toBe("gpt-image-2");
     expect(provider.providerType).toBe("openai");
     expect(provider.displayName).toBe("OpenAI");
     expect(provider.connectionStatus).toBe("unknown");
@@ -61,5 +60,37 @@ describe("settings-panel store interactions", () => {
     useSettingsStore.getState().removeProvider(id);
     expect(useSettingsStore.getState().providers[id]).toBeUndefined();
     expect(useSettingsStore.getState().activeProviderId).toBe("openai");
+  });
+});
+
+describe("settings migration v2 → v3", () => {
+  it("folds legacy defaultModel into defaultParams.model", () => {
+    const migrated = migrateV2({
+      activeProviderId: "yundu",
+      providers: {
+        yundu: {
+          id: "yundu",
+          providerType: "openai",
+          displayName: "yundu",
+          apiKey: "sk-x",
+          baseUrl: "https://gd.yundu.lol/v1",
+          defaultModel: "gpt-image-2.5-sunburst",
+          defaultParams: {
+            model: "gpt-image-2",
+            size: "1024x1024",
+            quality: "auto",
+            n: 1,
+          },
+          connectionStatus: "unknown",
+        },
+      },
+    }) as {
+      providers: Record<string, { defaultParams: { model: string; frameCount?: number } }>;
+    };
+
+    expect(migrated.providers.yundu.defaultParams.model).toBe(
+      "gpt-image-2.5-sunburst",
+    );
+    expect(migrated.providers.yundu.defaultParams.frameCount).toBe(9);
   });
 });

@@ -26,7 +26,6 @@ const CONFIG = {
   displayName: "OpenAI",
   apiKey: API_KEY,
   baseUrl: BASE_URL,
-  defaultModel: "gpt-image-2",
   defaultParams: {
     model: "gpt-image-2",
     size: "1024x1024" as const,
@@ -93,7 +92,6 @@ describe.skipIf(!RUN_E2E)("e2e: real API generate", () => {
       displayName: "OpenAI",
       apiKey: API_KEY,
       baseUrl: BASE_URL,
-      defaultModel: "gpt-image-2",
       defaultParams: {
         model: "gpt-image-2",
         size: "1024x1024",
@@ -158,7 +156,6 @@ describe.skipIf(!RUN_E2E)("e2e: real API generate", () => {
       displayName: "OpenAI",
       apiKey: "sk-invalid-key",
       baseUrl: BASE_URL,
-      defaultModel: "gpt-image-2",
       defaultParams: {
         model: "gpt-image-2",
         size: "1024x1024",

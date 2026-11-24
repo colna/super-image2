@@ -9,7 +9,7 @@ import {
   LoadingOutlined,
 } from "@ant-design/icons";
 import type { ProviderConfig } from "@super-image/utils";
-import { Button, Card, Input, Select, Space, Typography } from "antd";
+import { Button, Card, Input, Space, Typography } from "antd";
 import { useCallback, useState } from "react";
 
 import { useI18n } from "@/lib/i18n";
@@ -24,7 +24,8 @@ interface ProviderEditFormProps {
 }
 
 export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
-  const { updateProviderField, updateConnectionStatus } = useSettingsStore();
+  const { updateProviderField, updateConnectionStatus, setAvailableModels } =
+    useSettingsStore();
   const providerDef = getProvider(config.providerType);
   const { t } = useI18n();
 
@@ -36,13 +37,32 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
     setTesting(true);
 
     try {
-      const provider = getProvider(config.providerType);
-      if (!provider) {
-        updateConnectionStatus(config.id, "error", t("editProvider.providerNotFound"));
-        return;
+      // 走同源 API 路由：浏览器直连中转常被 CORS 拦截（预检 403 / 无 ACAO）
+      const res = await fetch("/api/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          providerId: config.providerType,
+          apiKey: config.apiKey,
+          baseUrl: config.baseUrl,
+        }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        models?: { id: string; name: string }[];
+        error?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(data.error ?? t("editProvider.connectionFailed"));
       }
-      const ok = await provider.testConnection(config);
-      updateConnectionStatus(config.id, ok ? "connected" : "error", ok ? undefined : t("editProvider.connectionFailed"));
+
+      if (data.ok) {
+        setAvailableModels(config.id, data.models ?? []);
+        updateConnectionStatus(config.id, "connected");
+      } else {
+        updateConnectionStatus(config.id, "error", t("editProvider.connectionFailed"));
+      }
     } catch (err) {
       updateConnectionStatus(
         config.id,
@@ -52,7 +72,7 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
     } finally {
       setTesting(false);
     }
-  }, [config, updateConnectionStatus, t]);
+  }, [config, updateConnectionStatus, setAvailableModels, t]);
 
   if (!providerDef) return null;
 
@@ -111,24 +131,17 @@ export function ProviderEditForm({ config, onClose }: ProviderEditFormProps) {
           />
         </div>
 
-        {/* Model */}
-        <div>
-          <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 4 }}>
-            {t("editProvider.model")}
-          </Text>
-          <Select
-            value={config.defaultModel}
-            onChange={(v) => updateProviderField(config.id, "defaultModel", v)}
-            style={{ width: "100%" }}
-            options={providerDef.models.map((m) => ({ label: m.name, value: m.id }))}
-          />
-        </div>
-
         {/* Connection status */}
         {config.connectionStatus === "connected" && (
           <Space style={{ color: "#52c41a", fontSize: 12 }}>
             <CheckCircleOutlined />
-            <span>{t("editProvider.connected")}</span>
+            <span>
+              {config.availableModels?.length
+                ? t("editProvider.connectedWithModels", {
+                    count: config.availableModels.length,
+                  })
+                : t("editProvider.connected")}
+            </span>
           </Space>
         )}
         {config.connectionStatus === "error" && (

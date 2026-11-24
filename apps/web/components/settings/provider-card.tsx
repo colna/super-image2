@@ -48,7 +48,11 @@ export function ProviderCard({
       onClick={onSelect}
     >
       {/* Radio */}
-      <Radio checked={isActive} onClick={(e) => e.stopPropagation()} />
+      <Radio
+        checked={isActive}
+        onChange={onSelect}
+        onClick={(e) => e.stopPropagation()}
+      />
 
       {/* Status dot */}
       <Badge

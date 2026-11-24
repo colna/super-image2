@@ -1,6 +1,7 @@
 import type {
   ConnectionStatus,
   GenerateParams,
+  Model,
   ProviderConfig,
 } from "@super-image/utils";
 import { create } from "zustand";
@@ -13,6 +14,12 @@ const DEFAULT_PARAMS: GenerateParams = {
   size: "1024x1024",
   quality: "auto",
   n: 1,
+  complexity: "auto",
+  outputFormat: "png",
+  frameCount: 9,
+  frameDurationMs: 200,
+  transparent: false,
+  moderation: "auto",
 };
 
 function makeDefaultProvider(): ProviderConfig {
@@ -22,7 +29,6 @@ function makeDefaultProvider(): ProviderConfig {
     displayName: "OpenAI",
     apiKey: "",
     baseUrl: "https://api.openai.com/v1",
-    defaultModel: "gpt-image-2",
     defaultParams: DEFAULT_PARAMS,
     connectionStatus: "unknown",
   };
@@ -45,8 +51,42 @@ function migrateV1(
       displayName: (p.displayName as string) ?? key,
       apiKey: (p.apiKey as string) ?? "",
       baseUrl: (p.baseUrl as string) ?? "https://api.openai.com/v1",
-      defaultModel: (p.defaultModel as string) ?? "gpt-image-2",
       defaultParams: (p.defaultParams as GenerateParams) ?? DEFAULT_PARAMS,
+      connectionStatus: (p.connectionStatus as ConnectionStatus) ?? "unknown",
+      connectionError: p.connectionError as string | undefined,
+    };
+  }
+  return { ...persisted, providers: migrated };
+}
+
+/**
+ * Migrate v2 → v3: 模型选择从服务商配置搬到生成参数。
+ * 旧数据里的 defaultModel 折进 defaultParams.model，避免用户已选的模型被重置。
+ */
+export function migrateV2(
+  persisted: Record<string, unknown>,
+): Record<string, unknown> {
+  const providers = persisted.providers as
+    | Record<string, Record<string, unknown>>
+    | undefined;
+  if (!providers) return persisted;
+
+  const migrated: Record<string, ProviderConfig> = {};
+  for (const [key, p] of Object.entries(providers)) {
+    const params = (p.defaultParams as GenerateParams) ?? DEFAULT_PARAMS;
+    const legacyModel = p.defaultModel as string | undefined;
+    migrated[key] = {
+      id: (p.id as string) ?? key,
+      providerType: (p.providerType as string) ?? key,
+      displayName: (p.displayName as string) ?? key,
+      apiKey: (p.apiKey as string) ?? "",
+      baseUrl: (p.baseUrl as string) ?? "https://api.openai.com/v1",
+      defaultParams: {
+        ...DEFAULT_PARAMS,
+        ...params,
+        model: legacyModel ?? params.model ?? DEFAULT_PARAMS.model,
+      },
+      availableModels: p.availableModels as ProviderConfig["availableModels"],
       connectionStatus: (p.connectionStatus as ConnectionStatus) ?? "unknown",
       connectionError: p.connectionError as string | undefined,
     };
@@ -68,8 +108,9 @@ export interface SettingsState {
   updateProviderField: (
     id: string,
     field: keyof ProviderConfig,
-    value: string | GenerateParams | ConnectionStatus,
+    value: string | GenerateParams | ConnectionStatus | Model[],
   ) => void;
+  setAvailableModels: (id: string, models: Model[]) => void;
   addProvider: (providerType: string, displayName: string) => string;
   updateConnectionStatus: (
     id: string,
@@ -120,6 +161,18 @@ export const useSettingsStore = create<SettingsState>()(
           };
         }),
 
+      setAvailableModels: (id, models) =>
+        set((state) => {
+          const provider = state.providers[id];
+          if (!provider) return state;
+          return {
+            providers: {
+              ...state.providers,
+              [id]: { ...provider, availableModels: models },
+            },
+          };
+        }),
+
       addProvider: (providerType, displayName) => {
         const id = crypto.randomUUID();
         const meta = PROVIDER_TYPES.find((t) => t.type === providerType);
@@ -129,8 +182,10 @@ export const useSettingsStore = create<SettingsState>()(
           displayName,
           apiKey: "",
           baseUrl: meta?.defaultBaseUrl ?? "https://api.openai.com/v1",
-          defaultModel: meta?.defaultModel ?? "gpt-image-2",
-          defaultParams: DEFAULT_PARAMS,
+          defaultParams: {
+            ...DEFAULT_PARAMS,
+            model: meta?.defaultModel ?? DEFAULT_PARAMS.model,
+          },
           connectionStatus: "unknown",
         };
         set((state) => ({
@@ -157,14 +212,16 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: "super-image-settings",
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
+        let next = persisted as Record<string, unknown>;
         if (version < 2) {
-          return migrateV1(
-            persisted as Record<string, unknown>,
-          ) as unknown as SettingsState;
+          next = migrateV1(next);
         }
-        return persisted as unknown as SettingsState;
+        if (version < 3) {
+          next = migrateV2(next);
+        }
+        return next as unknown as SettingsState;
       },
       partialize: (state) => ({
         providers: state.providers,

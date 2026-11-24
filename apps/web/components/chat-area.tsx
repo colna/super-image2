@@ -1,6 +1,6 @@
 "use client";
 
-import type { Session } from "@super-image/utils";
+import type { GenerateParams, Session } from "@super-image/utils";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 
@@ -45,7 +45,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
         sessionStorage.removeItem(pendingKey);
         const { prompt, params } = JSON.parse(pending) as {
           prompt: string;
-          params: { size: string; quality: string; n: number };
+          params: GenerateParams;
         };
         sendGenerate(sessionId, prompt, params);
       }
@@ -53,7 +53,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   }, [sessionId, loadMessages, sendGenerate, sendGenerateWithRefs]);
 
   const handleSend = useCallback(
-    async (prompt: string, params: { size: string; quality: string; n: number }, attachments?: File[]) => {
+    async (prompt: string, params: GenerateParams, attachments?: File[]) => {
       if (isEditSession && sourceImageId) {
         // Chain edits: use the last AI-generated image, fall back to original source
         const msgs = useChatStore.getState().messages;
@@ -90,10 +90,11 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
       const userMsg = msgs[aiIdx - 1];
       if (userMsg?.role !== "user") return;
 
-      const retryParams = {
-        size: userMsg.params?.size ?? "1024x1024",
-        quality: userMsg.params?.quality ?? "auto",
-        n: userMsg.params?.n ?? 1,
+      const retryParams: GenerateParams = userMsg.params ?? {
+        model: "",
+        size: "1024x1024",
+        quality: "auto",
+        n: 1,
       };
 
       if (isEditSession && sourceImageId) {
@@ -130,7 +131,9 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         providerId: settings.activeProviderId,
-        modelId: settings.providers[settings.activeProviderId]?.defaultModel ?? "gpt-image-1",
+        modelId:
+          settings.providers[settings.activeProviderId]?.defaultParams.model ??
+          "gpt-image-2",
         type: "edit",
         sourceImageId: imageId,
       };

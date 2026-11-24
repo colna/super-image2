@@ -1,3 +1,5 @@
+import type { GenerateParams } from "@super-image/utils";
+
 /**
  * 工具触发的「待执行生成任务」内存暂存。
  *
@@ -9,7 +11,7 @@ export interface PendingToolJob {
   toolId: string;
   prompt: string;
   files: File[];
-  params: { size: string; quality: string; n: number };
+  params: GenerateParams;
 }
 
 const jobs = new Map<string, PendingToolJob>();

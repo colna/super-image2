@@ -53,11 +53,27 @@ export interface ImageResult {
 }
 
 // ---- Generate Params ----
+export type ImageComplexity = "auto" | "low" | "medium" | "high";
+export type ImageOutputFormat = "png" | "jpeg" | "webp" | "gif";
+export type ModerationLevel = "auto" | "low";
+
 export interface GenerateParams {
   model: string;
   size: string;
   quality: string;
   n: number;
+  /** 规划开销，仅部分模型支持 */
+  complexity?: ImageComplexity;
+  /** 输出格式；gif 时配合 frameCount / frameDurationMs */
+  outputFormat?: ImageOutputFormat;
+  /** GIF 帧数，2–16 */
+  frameCount?: number;
+  /** 每帧时长（毫秒），20–2000 */
+  frameDurationMs?: number;
+  /** 透明背景，true 时映射为 background: transparent */
+  transparent?: boolean;
+  /** 内容审核强度 */
+  moderation?: ModerationLevel;
 }
 
 // ---- Provider ----
@@ -74,18 +90,14 @@ export interface ProviderConfig {
   displayName: string;
   apiKey: string;
   baseUrl: string;
-  defaultModel: string;
   defaultParams: GenerateParams;
+  /** 「测试连接」从 /models 拉到的可用模型，空则用 provider 内置列表 */
+  availableModels?: Model[];
   connectionStatus: ConnectionStatus;
   connectionError?: string;
 }
 
-export interface GenerateOptions {
-  model: string;
-  size: string;
-  quality: string;
-  n: number;
-}
+export type GenerateOptions = GenerateParams;
 
 export interface GenerateResult {
   images: { id: string; b64Json: string; revisedPrompt?: string }[];
@@ -100,6 +112,8 @@ export interface ImageProvider {
   supportedSizes: string[];
   supportedQualities: string[];
   maxN: number;
+  /** 列出服务商可用模型；不支持动态发现时可省略 */
+  listModels?(config: ProviderConfig): Promise<Model[]>;
   generate(
     prompt: string,
     options: GenerateOptions,

@@ -42,10 +42,11 @@ export function ToolModal({ tool, onClose }: ToolModalProps) {
     if (files.length < tool.minImages || submitting) return;
     setSubmitting(true);
 
-    const params = {
-      size: config?.defaultParams.size ?? "1024x1024",
-      quality: config?.defaultParams.quality ?? "auto",
-      n: config?.defaultParams.n ?? 1,
+    const params = config?.defaultParams ?? {
+      model: "gpt-image-2",
+      size: "1024x1024",
+      quality: "auto",
+      n: 1,
     };
     const prompt = buildToolPrompt(tool, supplement);
 
@@ -56,7 +57,7 @@ export function ToolModal({ tool, onClose }: ToolModalProps) {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       providerId: activeProviderId,
-      modelId: config?.defaultModel ?? "gpt-image-2",
+      modelId: params.model,
     };
     await createSession(session);
     setPendingToolJob(id, { toolId: tool.id, prompt, files, params });
