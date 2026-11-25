@@ -48,7 +48,7 @@ export function SettingsPanel() {
     <Drawer
       title={t("settings.title")}
       placement="right"
-      width={384}
+      size={384}
       open={settingsPanelOpen}
       onClose={() => setSettingsPanelOpen(false)}
       closeIcon={<CloseOutlined />}

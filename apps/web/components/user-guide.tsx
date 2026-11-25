@@ -16,7 +16,7 @@ export function UserGuide() {
     <Drawer
       title={t("guide.title")}
       placement="right"
-      width={420}
+      size={420}
       open={guideOpen}
       onClose={() => setGuideOpen(false)}
       closeIcon={<CloseOutlined />}
